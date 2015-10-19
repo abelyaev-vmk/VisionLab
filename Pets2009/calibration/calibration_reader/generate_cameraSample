@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Sample to generate tesCalibration
+#
+
+
+
+
+g++ -c xmlUtil.cpp -o xmlUtil.o -I. -I/usr/include/libxml2
+g++ -c cameraModel.cpp -o cameraModel.o -I. -I/usr/include/libxml2
+g++ -c testCalibration.cpp -o testCalibration.o -I. -I/usr/include/libxml2 
+
+g++ -o testCalibration xmlUtil.o cameraModel.o testCalibration.o /usr/lib/libxml2.a -lm -lpthread -lrt -lgz
+

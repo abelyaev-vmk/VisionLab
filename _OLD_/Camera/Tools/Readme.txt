@@ -1,0 +1,1 @@
+To see, how it works, run function ComputeMatrixAndDrawImageExample

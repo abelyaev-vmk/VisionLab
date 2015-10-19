@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Camera name="camera">
+   <InternalCalibration dk1="-0.60151" dk2="4.702" dp1="-0.00047452" dp2="-0.0078229" flx="2696.3589" fly="2696.3589" ppx="959.5" ppy="539.5" s="0"/>
+   <ExternalCalibration rw="0.49528" rx="0.69725" ry="-0.4303" rz="0.28877" tx="-0.059884" ty="3.8333" tz="12.3911"/>
+</Camera>

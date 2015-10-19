@@ -1,0 +1,56 @@
+Initialize engine version: 5.1.1f1 (2046fc06d4d8)
+GfxDevice: creating device client; threaded=1
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.0]
+    Renderer: NVIDIA GeForce GT 740M          (ID=0x1292)
+    Vendor:   NVIDIA
+    VRAM:     1993 MB
+Begin MonoManager ReloadAssembly
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.dll (this message is harmless)
+Loading C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.dll into Unity Child Domain
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\Assembly-CSharp.dll (this message is harmless)
+Loading C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.UI.dll (this message is harmless)
+Loading C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.UI.dll into Unity Child Domain
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.Networking.dll (this message is harmless)
+Loading C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.Analytics.dll (this message is harmless)
+Loading C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UnityEngine.Analytics.dll into Unity Child Domain
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\LitJson.dll (this message is harmless)
+Loading C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\LitJson.dll into Unity Child Domain
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UMA.dll (this message is harmless)
+Loading C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\UMA.dll into Unity Child Domain
+- Completed reload, in  0.068 seconds
+desktop: 1920x1080 59Hz; virtual: 1920x1080 at 0,0
+<RI> Initializing input.
+<RI> Input initialized.
+<RI> Initialized touch support.
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\System.Core.dll (this message is harmless)
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\System.dll (this message is harmless)
+Platform assembly: C:\Users\Andrew\Desktop\VisionLab\Unity_TrackingProject\TryRun\try_Data\Managed\System.Xml.dll (this message is harmless)
+0.93056	0.36563	0.01909	0.00000
+0.08661	-0.16918	-0.98177	0.00000
+-0.35574	0.91525	-0.18910	0.00000
+0.00000	0.00000	0.00000	1.00000
+
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+(0.9, -0.2, -0.4)
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+(-2776.3, -16578.7, 2156.5)
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+12-8__14-12-43\
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+Setting up 1 worker threads for Enlighten.
+  Thread -> id: 1778 -> priority: 1 
