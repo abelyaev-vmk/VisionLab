@@ -3,8 +3,8 @@ using System.Collections;
 
 public class TryCameraOptional : MonoBehaviour {
 	public bool UseConstQuaternion = true;
-	public Quaternion constQuaternion = new Quaternion(-0.22264708f, -0.43816416f, -0.70999293f, 0.50433173f);
-	public Vector3 constPosition = new Vector3(-0.059884f, 3.8333f, 12.3911f);
+	private Quaternion constQuaternion = new Quaternion(0.28876954f, 0.43029931f, 0.69724888f, -0.49527634f);
+	private Vector3 constPosition = new Vector3(-0.059884f, 3.8333f, 12.3911f);
 	void Start () 
 	{
 		if (UseConstQuaternion)
@@ -12,5 +12,6 @@ public class TryCameraOptional : MonoBehaviour {
 			GameObject.Find ("Camera").transform.position = constPosition;
 			GameObject.Find ("Camera").transform.rotation = constQuaternion;
 		}
+		Debug.Log(GameObject.Find ("Camera").transform.rotation);
 	}
 }

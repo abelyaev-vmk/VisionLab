@@ -51,10 +51,13 @@ class Camera:
             R = R1.dot(R)
 
     # rotation from scene to camera coordinates
-    # quaternion in format [x, y, z, w]
-    def SetQuaternion(self, in_quaternion):
-        w = in_quaternion[3]
-        axis = in_quaternion[0 : 3]
+    def SetQuaternion(self, in_quaternion, order="xyzw"):
+        if order[0] == 'x':
+            w = in_quaternion[3]
+            axis = in_quaternion[0:3]
+        else:
+            w = in_quaternion[0]
+            axis = in_quaternion[1:4]
         rt = 2 * math.acos(w) / math.sin(math.acos(w)) * axis
         self.SetRotationVector(rt)
 
@@ -94,12 +97,15 @@ class Camera:
         axis = np.array([R[2, 1] - R[1, 2], R[0, 2] - R[2, 0], R[1, 0] - R[0, 1]])
         return angle / 2 / math.sin(angle) * axis
 
-    def GetQuaternion(self):
+    def GetQuaternion(self, order="xyzw"):
         rt = self.GetRotationVector()
         angle = np.linalg.norm(rt)
         w = math.cos(angle / 2.)
         axis = rt / angle
-        return np.concatenate((axis * math.sin(angle / 2), np.array(w).reshape(1)))
+        if order[0] == 'x':
+            return np.concatenate((axis * math.sin(angle / 2), np.array(w).reshape(1)))
+        else:
+            return np.concatenate((np.array(w).reshape(1), axis * math.sin(angle / 2)))
 
     # indicates usage of openGL
     def UseGL(self):
