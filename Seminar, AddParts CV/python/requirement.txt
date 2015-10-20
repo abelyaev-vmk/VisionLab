@@ -1,0 +1,8 @@
+necessary:
+numpy
+cython
+matplotlib
+pymaxflow
+
+additional:
+	scikit-image + scipy
