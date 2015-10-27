@@ -1,0 +1,95 @@
+
+<iButton>:
+    Button:
+        id: InvisibleButton
+        size: 0, 0
+        text_size: None, None
+
+<GUILayout>:
+    id: Layout
+    canvas:
+        Rectangle:
+            id: Rect
+            pos: 20, 10
+            source: "SOURCE-2.jpg"
+            size: 896, 506
+
+    TextInput:
+        id: ImgPathInput
+        size: 200, 30
+        center_x: 20 + self.width / 2
+        top: Layout.top
+        text: "SOURCE-2.jpg"
+
+    iButton:
+        id: BOpen
+        name: "BOpen"
+        size: 95, 60
+        right: ImgPathInput.center_x - 5
+        top: root.height - ImgPathInput.height - 10
+        text: "OPEN"
+
+    iButton:
+        id: BReset
+        name: "BReset"
+        size: 95, 60
+        top: BOpen.top
+        right: BOpen.right + self.width + 10
+        text: "RESET"
+
+    iButton:
+        id: BParallel
+        name: "BParallel"
+        size: 100, 60 + 30 + 10
+        top: Layout.top
+        right: BReset.right + 10 + self.width
+        text: "Parallel lines\n(0)"
+
+    iButton:
+        id: BPerpendicular
+        name: "BPerpendicular"
+        size: 140, 100
+        top: Layout.top
+        right: BParallel.right + 10 + self.width
+        text: "Perpendicular lines\n(0)"
+
+    iButton:
+        id: BWall
+        name: "BWall"
+        size: 100, 100
+        top: Layout.top
+        right: BPerpendicular.right + 10 + self.width
+        text: "Walls (0)"
+
+    iButton:
+        id: BSky
+        name: "BSky"
+        size: 100, 100
+        top: Layout.top
+        right: BWall.right + 10 + self.width
+        text: "Sky (None)"
+
+    iButton:
+        id: BSave
+        name: "BSave"
+        size: 100, 47
+        top: Layout.top
+        right: BSky.right + 10 + self.width
+        text: "Save data"
+
+    iButton:
+        id: BLoad
+        name: "BLoad"
+        size: BSave.size
+        top: Layout.top - 6 - BSave.height
+        right: BSave.right
+        text: "Load data"
+
+    iButton:
+        id: BQuit
+        name: "BQuit"
+        size: 96, 100
+        top: Layout.top
+        right: BLoad.right + 10 + self.width
+        text: "QUIT"
+
