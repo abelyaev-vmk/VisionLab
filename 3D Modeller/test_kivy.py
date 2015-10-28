@@ -40,7 +40,7 @@ class LevelScreen(Screen,GridLayout):
             Rectangle(pos=self.pos, size=Window.size)
 
         self.layout = GridLayout(cols=3,spacing=1,padding=10)
-        self.Button1 = CButtonW(id='1',text='Level 1')
+        self.Button1 = CButtonW(id='1' ,text='Level 1')
         # self.Button2 = Button(id='2',text='Level 2')
         # self.Button3 = Button(id='3',text='Level 3')
         # self.Button4 = Button(id='4',text='Level 4')

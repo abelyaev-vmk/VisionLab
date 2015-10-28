@@ -1,56 +1,19 @@
 import numpy as np
 from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager, Screen,FallOutTransition
-from kivy.uix.image import Image
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.core.window import Window
-from kivy.graphics import BorderImage
-from kivy.graphics import Color, Rectangle ,Line
+from kivy.graphics import Color, Rectangle, Line
 from GUI_consts import *
 from kivy.uix.textinput import TextInput
-from kivy.base import runTouchApp
-from kivy.lang import Builder
 from kivy.uix.widget import Widget
-from kivy.properties import NumericProperty, ReferenceListProperty,\
-    ObjectProperty
 from os import getcwd
 from os.path import isfile
+from ImageProperties import ImageProperties, RectProperties
+from ioImageData import save_image_data, load_image_data
 import warnings
 
 
-def empty_function(arg1=None, arg2=None, arg3=None, arg4=None):
-        pass
-
-
-class ImageProperties:
-    def __init__(self):
-        self.parallel_lines_on_ground_count = 0
-        self.perpendicular_lines_count = 0
-        self.walls_count = 0
-        self.sky_count = 'None'
-
-        self.parallel_lines_on_ground = []
-        self.perpendicular_lines = []
-        self.walls = []
-        self.sky = []
-
-    def add_parallel_line(self, line=None):
-        self.parallel_lines_on_ground_count += 1
-        self.parallel_lines_on_ground.append(line)
-
-    def add_perpendicular_line(self, line=None):
-        self.perpendicular_lines_count += 1
-        self.perpendicular_lines.append(line)
-
-    def add_wall(self, wall=None):
-        self.walls_count += 1
-        self.walls.append(wall)
-
-    def set_sky(self, sky=None):
-        self.sky_count = 'Exist'
-        self.sky = sky
+def empty_function(*args):
+    pass
 
 
 class iButton(Button):
@@ -60,18 +23,25 @@ class iButton(Button):
 class GUILayout(Widget):
     def __init__(self):
         super(GUILayout, self).__init__()
-        self.rect = self.canvas.children[1]
-        self.image_properties = ImageProperties()
+        self.rect = self.find_rectangle()
+        self.input = self.find_input()
+        self.image_properties = ImageProperties(self.input.text)
+        self.getting_function = None
+        self.getting_button = None
+        self.mouse_coordinates = []
+        self.input_count = 0
 
     def find_rectangle(self):
         for obj in self.canvas.children:
             if type(obj) == Rectangle:
-                self.rect = obj
-                return
+                return obj
+
+    def find_input(self):
+        for obj in self.children:
+            if type(obj) == TextInput:
+                return obj
 
     def get_button(self, touch):
-        if not self.rect:
-            self.find_rectangle()
         for obj in self.children:
             if not type(obj) == iButton:
                 continue
@@ -79,64 +49,120 @@ class GUILayout(Widget):
                 return obj
         return None
 
-    def open_image(self, button=None, reset=False):
+    def open_image(self, button=None, reset=False, end_of_input=False):
         if reset:
             return
-        image_path = self.children[-1].text
+        image_path = self.input.text
+        self.reset_image(image_path)
         if not isfile(getcwd() + '\\' + image_path):
             print 'No such file or directory'
             warnings.warn('No such file or directory: ' + image_path)
-            self.reset_image()
         else:
             self.rect.source = image_path
 
-    def reset_image(self, button=None, reset=False):
+    def reset_image(self, button=None, reset=False, end_of_input=False):
         if reset:
             return
         self.rect.source = ''
-        self.image_properties = ImageProperties()
-        for obj in self.children:
-            if type(obj) == iButton:
-                self.action(button.name)(button, reset=True)
+        self.image_properties = ImageProperties('')
+        for temp_button in self.children:
+            if type(temp_button) == iButton:
+                self.action(temp_button.name)(temp_button, reset=True)
 
-    def new_parallel(self, button, reset=False):
+    def getting_functional(self, getting_function=None, getting_button=None, input_counts=0,
+                           image_properties_function=None, end_of_input=False, min_input_counts=4):
+        if end_of_input:
+            if not (len(self.mouse_coordinates) == self.input_count or
+                        (self.input_count == -1 and len(self.mouse_coordinates) >= min_input_counts)):
+                print 'Wrong number of points to \"' + image_properties_function.__name__ + '\"'
+            else:
+                self.getting_button = None
+                self.getting_function = None
+                image_properties_function(self.mouse_coordinates)
+        else:
+            self.getting_function = getting_function
+            self.getting_button = getting_button
+            self.input_count = input_counts
+            self.mouse_coordinates = []
+
+    def new_parallel(self, button, reset=False, end_of_input=False):
         if not reset:
-            self.image_properties.add_parallel_line()
+            self.getting_functional(getting_function=self.new_parallel, getting_button=button, input_counts=2,
+                                    image_properties_function=self.image_properties.add_parallel_line,
+                                    end_of_input=end_of_input)
         button.text = 'Parallel lines\n(%d)' \
                       % self.image_properties.parallel_lines_on_ground_count
 
-    def new_perpendicular(self, button, reset=False):
+    def new_perpendicular(self, button, reset=False, end_of_input=False):
         if not reset:
-            self.image_properties.add_perpendicular_line()
+            self.getting_functional(getting_function=self.new_perpendicular, getting_button=button, input_counts=2,
+                                    image_properties_function=self.image_properties.add_perpendicular_line,
+                                    end_of_input=end_of_input)
         button.text = 'Perpendicular lines\n(%d)' \
                       % self.image_properties.perpendicular_lines_count
 
-    def new_wall(self, button, reset=False):
+    def new_wall(self, button, reset=False, end_of_input=False):
         if not reset:
-            self.image_properties.add_wall()
+            self.getting_functional(getting_function=self.new_wall, getting_button=button, input_counts=-1,
+                                    image_properties_function=self.image_properties.add_wall,
+                                    end_of_input=end_of_input, min_input_counts=4)
         button.text = 'Walls (%d)' % self.image_properties.walls_count
 
-    def new_sky(self, button, reset=False):
+    def new_sky(self, button, reset=False, end_of_input=False):
         if not reset:
-            self.image_properties.set_sky()
-        button.text = 'Sky (%s)' % 'Exist' if not reset else 'None'
+            self.getting_functional(getting_function=self.new_sky, getting_button=button, input_counts=-1,
+                                    image_properties_function=self.image_properties.set_sky,
+                                    end_of_input=end_of_input, min_input_counts=4)
+        button.text = 'Sky (%s)' % self.image_properties.sky_count
 
-    def save_data(self, button, reset=False):
-        if reset:
-            # BACKUP!!
-            return
-        pass
-
-    def load_data(self, button, reset=False):
+    def save_data(self, button=None, reset=False, end_of_input=False):
         if reset:
             return
-        pass
+        if '.' in self.input.text:
+            save_path = self.input.text[:self.input.text.find('.')] + '_data'
+        else:
+            save_path = self.input.text + '_data'
+        save_image_data(self.image_properties, save_path)
+        print 'Saving data as', save_path
 
-    def quit_GUI(self, button, reset=False):
+    def load_data(self, button=None, reset=False, end_of_input=False):
         if reset:
             return
-        self.save_data(button=None, reset=True)
-        quit()
+        if '.' in self.input.text:
+            path = self.input.text[:self.input.text.find('.')] + '_data'
+        else:
+            path = self.input.text + '_data'
+        self.image_properties = load_image_data(path)
+        print 'Loading data from', path
+        self.upgrade()
+
+    def calculate(self, button=None, reset=False, end_of_input=False):
+        if reset:
+            return
+        rp = RectProperties(size=self.rect.size, loc=self.rect.pos)
+        # self.image_properties.print_data(rp)
+        self.image_properties.set_data(rp=rp, set_rect=True)
+
+    def quit_GUI(self, button=None, reset=False, end_of_input=False):
+        if reset:
+            return
+        App.get_running_app().stop()
+
+    def upgrade(self):
+        self.input.text = self.image_properties.image_path
+        self.rect.source = self.input.text
+        upgrade_dict = {
+            'BParallel': 'Parallel lines\n(%d)'
+                         % self.image_properties.parallel_lines_on_ground_count,
+            'BPerpendicular': 'Perpendicular lines\n(%d)'
+                              % self.image_properties.perpendicular_lines_count,
+            'BWall': 'Walls (%d)' % self.image_properties.walls_count,
+            'BSky': 'Sky (%s)' % self.image_properties.sky_count,
+        }
+        for obj in self.children:
+            if type(obj) == iButton:
+                if obj.name in upgrade_dict:
+                    obj.text = upgrade_dict[obj.name]
 
     def action(self, name):
         try:
@@ -151,6 +177,7 @@ class GUILayout(Widget):
                 'BSave': self.save_data,
                 'BLoad': self.load_data,
                 'BQuit': self.quit_GUI,
+                'BCalc': self.calculate,
             }[name]
         except KeyError:
             print 'Bad key'
@@ -158,60 +185,24 @@ class GUILayout(Widget):
 
     def on_touch_down(self, touch):
         super(GUILayout, self).on_touch_down(touch)
-        button = self.get_button(touch)
-        self.action(button.name if button else None)(button)
 
+        button = self.get_button(touch)
+        if button:
+            if self.getting_function:
+                self.getting_function(button=self.getting_button, end_of_input=True)
+            self.action(button.name)(button=button)
+        if not button and self.getting_function:
+            self.mouse_coordinates.append(touch)
+            if 0 < self.input_count == len(self.mouse_coordinates):
+                self.getting_function(button=self.getting_button, end_of_input=True)
+
+        # print self.canvas.add(Line(points=(10, 10, 100, 100)))
 
 
 class GUIApp(App):
     def build(self):
-        # self.load_kv('GUI.kv')
         return GUILayout()
 
 
-if __name__=='__main__':
-    ip = ImageProperties()
+if __name__ == '__main__':
     GUIApp().run()
-
-
-# class iButton(BoxLayout):
-#     def __init__(self, **kwargs):
-#         print 'iButton.pos -> ', self.pos
-#         super(iButton, self).__init__(**kwargs)
-#         self.orientation = 'horizontal'
-#         with self.canvas:
-#             Color(1, 1, 1, 1, mode='rgba')
-#             Rectangle(pos=self.pos, size=self.size)
-#
-#         self.add_widget(Button(**kwargs))
-#
-#
-# class ManyLayouts(Screen, GridLayout):
-#     def __init__(self, **kwards):
-#         super(ManyLayouts, self).__init__(**kwards)
-#         with self.canvas:
-#             Color(1, 1, 1, 1, mode='rgba')
-#             rectPos = map(lambda x, y: x+ y, self.pos, LD_edge)
-#             Rectangle(pos=rectPos, source=imgTownCenterPath)
-#
-#         self.layout = GridLayout(rows=3, spaceing=1, padding=5)
-#         self.Button1 = iButton(id='1', text='Level 1', size=(100, 100))
-#         # self.Button2 = iButton(id='2', text='Level 2')
-#         # self.Button3 = Button(id='3', text='Level 3')
-#         # self.Button4 = Button(id='4', text='Level 4')
-#         self.layout.add_widget(self.Button1)
-#         # self.layout.add_widget(self.Button2)
-#         # self.layout.add_widget(self.Button3)
-#         # self.layout.add_widget(self.Button4)
-#         ManyLayouts.add_widget(self, self.layout)
-#
-#
-# class GUIApp(App):
-#     def build(self):
-#         sm = ScreenManager()
-#         sm.add_widget(ManyLayouts(name='level'))
-#         return sm
-#
-# if __name__ == '__main__':
-#     # img = Image(source='SOURCE-2.jpg', allow_stretch=False, keep_ratio=True)
-#     GUIApp().run()

@@ -88,8 +88,16 @@
     iButton:
         id: BQuit
         name: "BQuit"
-        size: 96, 100
+        size: 96, 47
         top: Layout.top
         right: BLoad.right + 10 + self.width
         text: "QUIT"
+
+    iButton:
+        id: BCalc
+        name: "BCalc"
+        size: BQuit.size
+        top: Layout.top - 6 - BQuit.height
+        right: BQuit.right
+        text: "Calculate"
 
