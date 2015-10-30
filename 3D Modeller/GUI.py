@@ -7,7 +7,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from os import getcwd
 from os.path import isfile
-from ImageProperties import ImageProperties, RectProperties
+from ImageProperties import ImageProperties, RectProperties, get_pos
 from ioImageData import save_image_data, load_image_data
 import warnings
 
@@ -18,6 +18,19 @@ def empty_function(*args):
 
 class iButton(Button):
     pass
+
+
+def get_color(name):
+    try:
+        return {
+            'BParallel': (1, 0, 0),
+            'BPerpendicular': (0, 1, 0),
+            'BWall': (1, 1, 0),
+            'BGround': (1, 0, 1),
+            'BSky': (0, 0, 1),
+        }[name]
+    except KeyError:
+        return 0, 0, 0
 
 
 class GUILayout(Widget):
@@ -64,10 +77,16 @@ class GUILayout(Widget):
         if reset:
             return
         self.rect.source = ''
-        self.image_properties = ImageProperties('')
+        self.image_properties = ImageProperties()
+        self.getting_function = None
+        self.getting_button = None
+        self.mouse_coordinates = []
         for temp_button in self.children:
             if type(temp_button) == iButton:
                 self.action(temp_button.name)(temp_button, reset=True)
+        for line in self.canvas.children:
+            if type(line) == Line:
+                self.canvas.remove(line)
 
     def getting_functional(self, getting_function=None, getting_button=None, input_counts=0,
                            image_properties_function=None, end_of_input=False, min_input_counts=4):
@@ -76,9 +95,17 @@ class GUILayout(Widget):
                         (self.input_count == -1 and len(self.mouse_coordinates) >= min_input_counts)):
                 print 'Wrong number of points to \"' + image_properties_function.__name__ + '\"'
             else:
+                r, g, b = get_color(self.getting_button.name)
                 self.getting_button = None
                 self.getting_function = None
                 image_properties_function(self.mouse_coordinates)
+                print self.mouse_coordinates
+                with self.canvas:
+                    Color(r, g, b)
+                    line = Line(points=self.mouse_coordinates[0].pos, width=2)
+                for points in reversed(self.mouse_coordinates):
+                    line.points += points.pos
+                self.image_properties.add_line_on_image(line.points, (r, g, b))
         else:
             self.getting_function = getting_function
             self.getting_button = getting_button
@@ -105,15 +132,22 @@ class GUILayout(Widget):
         if not reset:
             self.getting_functional(getting_function=self.new_wall, getting_button=button, input_counts=-1,
                                     image_properties_function=self.image_properties.add_wall,
-                                    end_of_input=end_of_input, min_input_counts=4)
+                                    end_of_input=end_of_input, min_input_counts=3)
         button.text = 'Walls (%d)' % self.image_properties.walls_count
 
     def new_sky(self, button, reset=False, end_of_input=False):
         if not reset:
             self.getting_functional(getting_function=self.new_sky, getting_button=button, input_counts=-1,
                                     image_properties_function=self.image_properties.set_sky,
-                                    end_of_input=end_of_input, min_input_counts=4)
+                                    end_of_input=end_of_input, min_input_counts=3)
         button.text = 'Sky (%s)' % self.image_properties.sky_count
+
+    def new_ground(self, button, reset=False, end_of_input=False):
+        if not reset:
+            self.getting_functional(getting_function=self.new_ground, getting_button=button, input_counts=-1,
+                                    image_properties_function=self.image_properties.set_ground,
+                                    end_of_input=end_of_input, min_input_counts=3)
+        button.text = 'Ground (%s)' % self.image_properties.ground_count
 
     def save_data(self, button=None, reset=False, end_of_input=False):
         if reset:
@@ -134,14 +168,19 @@ class GUILayout(Widget):
             path = self.input.text + '_data'
         self.image_properties = load_image_data(path)
         print 'Loading data from', path
+        for i in range(self.image_properties.lines_on_image_count):
+            r, g, b = self.image_properties.colors_of_lines[i]
+            with self.canvas:
+                Color(r, g, b)
+                Line(points=self.image_properties.lines_on_image[i], width=2)
         self.upgrade()
 
     def calculate(self, button=None, reset=False, end_of_input=False):
         if reset:
             return
         rp = RectProperties(size=self.rect.size, loc=self.rect.pos)
-        # self.image_properties.print_data(rp)
-        self.image_properties.set_data(rp=rp, set_rect=True)
+        self.image_properties.print_data(rp)
+        # self.image_properties.set_data(rp=rp, set_rect=True)
 
     def quit_GUI(self, button=None, reset=False, end_of_input=False):
         if reset:
@@ -157,6 +196,7 @@ class GUILayout(Widget):
             'BPerpendicular': 'Perpendicular lines\n(%d)'
                               % self.image_properties.perpendicular_lines_count,
             'BWall': 'Walls (%d)' % self.image_properties.walls_count,
+            'BGround': 'Ground (%s)' % self.image_properties.ground_count,
             'BSky': 'Sky (%s)' % self.image_properties.sky_count,
         }
         for obj in self.children:
@@ -173,6 +213,7 @@ class GUILayout(Widget):
                 'BParallel': self.new_parallel,
                 'BPerpendicular': self.new_perpendicular,
                 'BWall': self.new_wall,
+                'BGround': self.new_ground,
                 'BSky': self.new_sky,
                 'BSave': self.save_data,
                 'BLoad': self.load_data,

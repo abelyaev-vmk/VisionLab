@@ -1,66 +1,181 @@
-from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager, Screen,FallOutTransition
-from kivy.uix.image import Image
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.core.window import Window
-from kivy.graphics import BorderImage
-from kivy.graphics import Color, Rectangle ,Line
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+from OpenGL.GLUT import glutInit, glutInitDisplayMode
+from PIL import Image  # PIL
+import sys
+import math
 
-#################     Images   ######################
-S = Image(source='SOuRCE-2.jpg')
-L = 'images/spinnin.gif'
-#################     Images   ######################
-
-
-class CButtonW(BoxLayout):
-    def __init__(self, **kwargs):
-        print "init --> CButton self.pos is ",self.pos
-        super(CButtonW, self).__init__(**kwargs)
-        self.orientation = 'vertical'
-        with self.canvas.before:
-            Color(1, 1, 0, 1, mode='rgba')
-            Rectangle(pos=self.pos,size=self.size)
-            BorderImage(
-                     border=(10, 10, 10, 10),
-                    source='images/tex.png')
-
-        self.add_widget(S)
-        self.add_widget(Button(text="Button 1"))
-        self.add_widget(Image(source=L))
+angle = 0.0
+angle2 = 0.0
+texture = 0
+object = 0
+d = 3.0 / math.sqrt(3)
 
 
-class LevelScreen(Screen,GridLayout):
-    def __init__(self, **kwargs):
-        super(LevelScreen, self).__init__(**kwargs)
-        with self.canvas:
-            Line(points=(10, 10, 20, 30, 40, 50))
-            Color(1, 0, 1, 1, mode='rgba')
-            Rectangle(pos=self.pos, size=Window.size)
+def drawBox(x1, x2, y1, y2, z1, z2):
+    glBindTexture(GL_TEXTURE_2D, texture)
+    glBegin(GL_POLYGON)  # front face
+    glNormal3f(0.0, 0.0, 1.0)
+    glTexCoord2f(0, 0)
+    glVertex3f(x1, y1, z2)
+    glTexCoord2f(1, 0)
+    glVertex3f(x2, y1, z2)
+    glTexCoord2f(1, 1)
+    glVertex3f(x2, y2, z2)
+    glTexCoord2f(0, 1)
+    glVertex3f(x1, y2, z2)
+    glEnd()
 
-        self.layout = GridLayout(cols=3,spacing=1,padding=10)
-        self.Button1 = CButtonW(id='1' ,text='Level 1')
-        # self.Button2 = Button(id='2',text='Level 2')
-        # self.Button3 = Button(id='3',text='Level 3')
-        # self.Button4 = Button(id='4',text='Level 4')
-        self.layout.add_widget(self.Button1)
-        # self.layout.add_widget(self.Button2)
-        # self.layout.add_widget(self.Button3)
-        # self.layout.add_widget(self.Button4)
+    glBegin(GL_POLYGON)  # back face
+    glNormal3f(0.0, 0.0, -1.0)
+    glTexCoord2f(1, 0)
+    glVertex3f(x2, y1, z1)
+    glTexCoord2f(0, 0)
+    glVertex3f(x1, y1, z1)
+    glTexCoord2f(0, 1)
+    glVertex3f(x1, y2, z1)
+    glTexCoord2f(1, 1)
+    glVertex3f(x2, y2, z1)
+    glEnd()
 
-        LevelScreen.cols=3
-        LevelScreen.add_widget(self,self.layout)
-        # print "position of 1st button is ",self.Button1.pos
-        # print "position of 2 button is ",self.Button2.pos
+    glBegin(GL_POLYGON)  # left face
+    glNormal3f(-1.0, 0.0, 0.0)
+    glTexCoord2f(0, 0)
+    glVertex3f(x1, y1, z1)
+    glTexCoord2f(0, 1)
+    glVertex3f(x1, y1, z2)
+    glTexCoord2f(1, 1)
+    glVertex3f(x1, y2, z2)
+    glTexCoord2f(1, 0)
+    glVertex3f(x1, y2, z1)
+    glEnd()
+
+    glBegin(GL_POLYGON)  # right face
+    glNormal3f(1.0, 0.0, 0.0)
+    glTexCoord2f(0, 1)
+    glVertex3f(x2, y1, z2)
+    glTexCoord2f(0, 0)
+    glVertex3f(x2, y1, z1)
+    glTexCoord2f(1, 0)
+    glVertex3f(x2, y2, z1)
+    glTexCoord2f(1, 1)
+    glVertex3f(x2, y2, z2)
+    glEnd()
+
+    glBegin(GL_POLYGON)  # top face
+    glNormal3f(0.0, 1.0, 0.0)
+    glTexCoord2f(0, 1)
+    glVertex3f(x1, y2, z2)
+    glTexCoord2f(1, 1)
+    glVertex3f(x2, y2, z2)
+    glTexCoord2f(1, 0)
+    glVertex3f(x2, y2, z1)
+    glTexCoord2f(0, 0)
+    glVertex3f(x1, y2, z1)
+    glEnd()
+
+    glBegin(GL_POLYGON)  # bottom face
+    glNormal3f(0.0, -1.0, 0.0)
+    glTexCoord2f(1, 1)
+    glVertex3f(x2, y1, z2)
+    glTexCoord2f(1, 0)
+    glVertex3f(x1, y1, z2)
+    glTexCoord2f(0, 0)
+    glVertex3f(x1, y1, z1)
+    glTexCoord2f(0, 1)
+    glVertex3f(x2, y1, z1)
+    glEnd()
 
 
-# App Class
-class MyJBApp(App):
-    def build(self):
-        sm = ScreenManager(transition= FallOutTransition())
-        sm.add_widget(LevelScreen(name='level'))
-        return sm
+def loadTexture(fileName):
+    image = Image.open(fileName)
+    width = image.size[0]
+    height = image.size[1]
+    image = image.tobytes("raw", "RGBX", 0, -1)
+    texture = glGenTextures(1)
 
-if __name__ == '__main__':
-    MyJBApp().run()
+    glBindTexture(GL_TEXTURE_2D, texture)  # 2d texture (x and y size)
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image)
+
+    return texture
+
+
+def init():
+    glClearColor(0.0, 0.0, 0.0, 0.0)
+    glClearDepth(1.0)
+    glDepthFunc(GL_LEQUAL)
+    glEnable(GL_DEPTH_TEST)
+    glEnable(GL_TEXTURE_2D)
+    glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+
+
+def reshape(width, height):
+    glViewport(0, 0, width, height)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(60.0, float(width) / float(height), 1.0, 60.0)
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    gluLookAt(0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0)
+
+
+def display():
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    gluLookAt(0, 0, 0, 1, 1, 1, 0, 1, 0)
+    glTranslatef(4, 4, 4)
+    glRotatef(angle2, 1, -1, 0)
+    glTranslatef(d - 1.5, d - 1.5, d - 1.5)
+    glTranslatef(1.5, 1.5, 1.5)  # move cube from the center
+    glRotatef(angle, 1.0, 1.0, 0.0)
+    glTranslatef(-1.5, -1.5, -1.5)  # move cube into the center
+    drawBox(1, 2, 1, 2, 1, 2)
+
+    glutSwapBuffers()
+
+
+def keyPressed(*args):
+    if args[0] == '\033':
+        sys.exit()
+
+
+def animate():
+    global angle, angle2
+
+    angle = 0.04 * glutGet(GLUT_ELAPSED_TIME)
+    angle2 = 0.01 * glutGet(GLUT_ELAPSED_TIME)
+
+    glutPostRedisplay()
+
+
+def main():
+    global texture
+
+    print bool(glutInit)
+    glutInit(sys.argv)
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
+    glutInitWindowSize(500, 500)
+    glutInitWindowPosition(0, 0)
+
+    glutCreateWindow("Simple PyOpenGL example")
+    glutDisplayFunc(display)
+    glutIdleFunc(animate)
+    glutReshapeFunc(reshape)
+    glutKeyboardFunc(keyPressed)
+    init()
+
+    texture = loadTexture("Results\\EmptyInterface.png")
+
+    glutMainLoop()
+
+
+print "Hit ESC key to quit."
+main()
