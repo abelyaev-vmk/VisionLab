@@ -1,6 +1,6 @@
 import numpy as np
 import camera
-from Renderer import Renderer
+from math import sqrt
 get_pos = lambda mouse: mouse.pos
 
 
@@ -20,7 +20,6 @@ class ImageProperties:
         self.image_path = image_path
         self.rp = RectProperties()
         self.cp = CameraProperties()
-        self.renderer = None
 
         self.parallel_lines_on_ground_count = 0
         self.perpendicular_lines_count = 0
@@ -160,4 +159,3 @@ class CameraProperties:
         self.cam.UseNonGL()
         self.view_matrix = self.cam.GetViewMatrix()
         print self.view_matrix
-

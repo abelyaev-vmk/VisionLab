@@ -167,7 +167,7 @@ def main():
 
     glutCreateWindow("Simple PyOpenGL example")
     glutDisplayFunc(display)
-    glutIdleFunc(animate)
+    # glutIdleFunc(animate)
     glutReshapeFunc(reshape)
     glutKeyboardFunc(keyPressed)
     init()
