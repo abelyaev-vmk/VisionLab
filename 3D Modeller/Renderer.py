@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-
+from triangle import delaunay
 
 def line_length(line=((0, 0), (1, 1))):
     return sqrt((line[0][0] - line[1][0]) ** 2 +
@@ -134,6 +134,7 @@ class VertexData:
             v = Vertex(pos=other)
             if v.id not in self.vertexes_dict:
                 temp_data.vertexes_dict[v.id] = v
+        self.vertexes_array = map(lambda item: item[1], self.vertexes_dict.items())
         return temp_data
 
     def __iadd__(self, other):
@@ -151,7 +152,7 @@ class VertexData:
         return len(self.vertexes_dict)
 
     def __getitem__(self, item):
-        if type(item) == int:
+        if type(item) == int or type(item) == float or item.__class__.__name__ == 'int32':
             return self.vertexes_array[item]
         if item not in self.vertexes_dict:
             return None
@@ -161,8 +162,8 @@ class VertexData:
         return item in self.vertexes_dict
 
     def __iter__(self):
-        for key in self.vertexes_dict:
-            yield self.vertexes_dict[key]
+        for elem in self.vertexes_array:
+            yield elem
 
 
 class Renderer:
@@ -172,10 +173,11 @@ class Renderer:
         self.sky = sky
 
         self.vertexes = VertexData()
+        self.triangles = []
         self.count = 0
 
     def set_vertexes(self):
-        self.set_ground(increase=5)
+        self.set_ground(increase=1)
         for wall in self.walls:
             self.set_wall(wall=wall)
         self.set_sky()
@@ -195,8 +197,9 @@ class Renderer:
                     square += 1
                     self.vertexes += Vertex(pos=(int(i / increase), int(j / increase), 0),
                                             nor=normal, col=(1, 1, 1))
-        self.count += square
         print square
+        if not self.triangles:
+            self.set_triangles()
         # triangles = get_triangles_on_plane(points_on_plane, increase=2)
         # print len(triangles)
         # self.vertexes += triangles
@@ -209,17 +212,26 @@ class Renderer:
     def set_sky(self, normal=(0, -1, 0)):
         pass
 
+    def set_triangles(self):
+        points = []
+        for ver in self.vertexes:
+            points.append(ver.pos[0:2])
+        triangles = delaunay(points)
+        for tri in triangles:
+            self.triangles.extend(self.vertexes[tri[i]].pos for i in xrange(3))
+        print self.triangles
+
     def __draw_objects(self):
         glBegin(GL_POLYGON)
         # for i in xrange(self.count):
         #     glNormal3fv(self.normals[i])
         #     glVertex3fv(self.vertexes[i])
         #     glColor3fv(self.colors[i])
-
-        for ver in self.vertexes:
-            glNormal3fv(ver.nor)
-            glVertex3fv(ver.pos)
-            glColor3fv(ver.col)
+        from random import random
+        for tri in self.triangles:
+            glNormal3fv((0, 0, 1))
+            glVertex3fv(tri)
+            glColor3fv(self.vertexes[get_vertex_name(tri)].col)
 
         # for i in range(2, len(self.vertexes)):
         #     glNormal3fv(self.vertexes[i - 2].nor)
@@ -275,7 +287,9 @@ class Renderer:
 
 
 if __name__ == '__main__':
-    lines = (((50, 50), (100, 20)), ((100, 20), (150, 70)), ((150, 70), (80, 200)), ((80, 200), (50, 50)))
+    k = 2
+    lines = map(lambda m: ((m[0][0] * k, m[0][1] * k), (m[1][0] * k, m[1][1] * k)),
+                (((5, 5), (10, 2)), ((10, 2), (15, 7)), ((15, 7), (8, 20)), ((8, 20), (5, 5))))
     rend = Renderer(ground=lines)
     rend.set_vertexes()
     rend.render()
