@@ -20,5 +20,5 @@ def load_image_data(in_path):
         print 'Loaded image path', ip.image_path
     else:
         print 'Wrong image path. Loading %s' % imgTownCenterPath
-    ip.image_path = imgTownCenterPath
+        ip.image_path = imgTownCenterPath
     return ip

@@ -219,7 +219,6 @@ void update()
 	//make animation
 	glutPostRedisplay();
 }
-
 void makeTree(Tree *tree, int count);
 
 /////////////////////////////////////////////////////////////////////////

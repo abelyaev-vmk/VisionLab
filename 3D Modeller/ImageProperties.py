@@ -1,12 +1,8 @@
 import numpy as np
 import camera
-from math import sqrt
+from Renderer import Renderer, make_lines
+from CameraProperties import CameraProperties
 get_pos = lambda mouse: mouse.pos
-
-
-class CameraProperties:
-    pass
-
 
 class RectProperties:
     def __init__(self, size=(0, 0), loc=(0, 0), percentage=(1, 1)):
@@ -105,6 +101,7 @@ class ImageProperties:
         return ip
 
     def print_data(self, rp=RectProperties(), set_rect=False):
+        return
         if set_rect:
             self.rp = rp
         self.cp = CameraProperties(self)
@@ -115,47 +112,16 @@ class ImageProperties:
         cp.print_properties()
 
     def set_data(self, rp=RectProperties(), set_rect=False):
+        return
         if set_rect:
             self.rp = rp
         self.cp = CameraProperties(self.apply_rect(rp))
         self.cp.set_view_matrix()
 
 
-class CameraProperties:
-    def __init__(self, ip=ImageProperties(), view_matrix=()):
-        self.ip = ip
-        self.view_matrix = np.array(view_matrix)
-        self.cam = camera.Camera()
 
-    def print_properties(self):
-        print 'Parallel lines: '
-        for line in self.ip.parallel_lines_on_ground:
-            print ' ', line
 
-        print '\nPerpendicular lines: '
-        for line in self.ip.perpendicular_lines:
-            print ' ', line
 
-        print '\nWalls: '
-        for wall in self.ip.walls:
-            for point in wall:
-                print ' ', point
-            print ''
-
-        print 'Ground:'
-        for point in self.ip.ground:
-            print ' ', point
-
-        print '\nSky:'
-        for point in self.ip.sky:
-            print ' ', point
-
-        print'\n'
-
-    def set_view_matrix(self, location=(-0.059884, 3.833, 12.3911),
-                        quaternion=(0.69725, -0.4303, 0.28877, 0.49528)):
-        self.cam.SetLocation(np.array(location))
-        self.cam.SetQuaternion(np.array(quaternion))
-        self.cam.UseNonGL()
-        self.view_matrix = self.cam.GetViewMatrix()
-        print self.view_matrix
+def render(ip=ImageProperties()):
+    renderer = Renderer(ground=make_lines(ip.ground) , filename='SOURCE-2.jpg')
+    renderer.render()

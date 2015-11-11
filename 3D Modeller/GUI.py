@@ -7,7 +7,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from os import getcwd
 from os.path import isfile
-from ImageProperties import ImageProperties, RectProperties, get_pos
+from ImageProperties import ImageProperties, RectProperties, render
 from ioImageData import save_image_data, load_image_data
 import warnings
 
@@ -66,7 +66,9 @@ class GUILayout(Widget):
         if reset:
             return
         image_path = self.input.text
-        self.reset_image(image_path)
+        self.reset_image()
+        self.image_properties.image_path = image_path
+        print self.image_properties.image_path
         if not isfile(getcwd() + '\\' + image_path):
             print 'No such file or directory'
             warnings.warn('No such file or directory: ' + image_path)
@@ -162,6 +164,7 @@ class GUILayout(Widget):
     def load_data(self, button=None, reset=False, end_of_input=False):
         if reset:
             return
+        self.reset_image()
         if '.' in self.input.text:
             path = self.input.text[:self.input.text.find('.')] + '_data'
         else:
@@ -180,6 +183,7 @@ class GUILayout(Widget):
             return
         rp = RectProperties(size=self.rect.size, loc=self.rect.pos)
         self.image_properties.print_data(rp)
+        render(ip=self.image_properties.apply_rect(rp=rp))
         # self.image_properties.set_data(rp=rp, set_rect=True)
 
     def quit_GUI(self, button=None, reset=False, end_of_input=False):

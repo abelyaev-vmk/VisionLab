@@ -64,10 +64,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Fragment.frag">
+    <None Include="Vertex.vert">
       <Filter>Файлы ресурсов</Filter>
     </None>
-    <None Include="Vertex.vert">
+    <None Include="Fragment.frag">
       <Filter>Файлы ресурсов</Filter>
     </None>
   </ItemGroup>
