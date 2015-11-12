@@ -31,5 +31,6 @@ function out_pointArray = Img2World(in_imgPointArray, in_matrix, in_plane)
     A = cat(1, in_matrix, in_plane);
     b = cat(1, in_imgPointArray, zeros(1, nPoints));
     out_pointArray = A \ b;
+    disp(A)
 end
 

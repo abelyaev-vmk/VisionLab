@@ -139,6 +139,9 @@ function calibrationMatrix = GetCalibrationMatrixFromXml( xml_path, xml_type )
             matr = getOKMatrix * ...
                 [mFocal, 0, 0; 0, mFocal, 0; 0, 0, 1] ...
                 * getIKMatrix;
+            disp(getOKMatrix * ...
+                [mFocal, 0, 0; 0, mFocal, 0; 0, 0, 1])
+            disp(getIKMatrix)
       
             function matr = getIKMatrix()
                 matr = zeros(3,4);
@@ -236,7 +239,7 @@ function calibrationMatrix = GetCalibrationMatrixFromXml( xml_path, xml_type )
         function matr = getMatrix()
             K = [cFlx, tan(cS) * cFly, cPpx;
                  0, cFly, cPpy;
-                 0, 0, 1];
+                 0, 0, 1]
 %             alpha = 1 / cRw;
 %             direction = [cRx; cRy; cRz];
 %             direction = direction ./ sun(direction .* direction);
@@ -253,7 +256,8 @@ function calibrationMatrix = GetCalibrationMatrixFromXml( xml_path, xml_type )
                  2.0 * (cRy * cRz - cRx * cRw); ...
                  2.0 * (cRx * cRz - cRy * cRw), ...
                  2.0 * (cRy * cRz + cRx * cRw), ...
-                 1.0 - 2.0 * (cRx ^ 2 + cRy ^ 2)];
+                 1.0 - 2.0 * (cRx ^ 2 + cRy ^ 2)]
+             disp([R, -R * t]);
             matr = K * [R, -R * t];
         end
         

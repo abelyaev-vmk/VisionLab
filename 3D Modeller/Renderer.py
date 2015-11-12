@@ -1,11 +1,11 @@
 from math import sqrt, pi, sin, cos
 import numpy as np
-from matplotlib import pyplot as plt
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from triangle import delaunay
 from PIL import Image
+from CameraProperties import CameraProperties
 
 
 def line_length(line=((0, 0), (1, 1))):
@@ -185,6 +185,7 @@ class Renderer:
         self.count = 0
 
         self.filename = filename
+        self.cp = CameraProperties(project=CameraProperties.make_project_name(filename))
 
     def set_vertexes(self, increase=2):
         # self.set_ground_by_points_in_grid(increase=1)
@@ -271,7 +272,7 @@ class Renderer:
         if not self.triangles:
             self.set_triangles()
 
-    def __draw_ground_by_vertexes(self, source='SOURCE.jpg'):
+    def __draw_ground_by_vertexes(self):
         if not self.ground:
             return
         glColor3f(1, 1, 1)
@@ -283,7 +284,10 @@ class Renderer:
             point_x, point_y = float(line[0][0]) / self.image_width, float(line[0][1]) / self.image_height
             glTexCoord2f(point_x, point_y)
             # glTexCoord2f(line[0][0], line[0][1])
-            glVertex3f((point_x) * mult, point_y * mult, 0)
+            # glVertex3f((point_x) * mult, point_y * mult, 0)
+            wp = self.cp.img2world(point=(point_x, point_y)) / 10
+            print wp
+            glVertex3f(float(wp[0]), float(wp[1]), 0)
         glEnd()
 
     @staticmethod
@@ -454,6 +458,7 @@ class Renderer:
         glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
         self.eye, self.cen, self.up = [0, 0, 5], [3, 3, 0], [0, 1, 1]
+        # self.eye, self.cen, self.up = self.cp.get_eye_center_up()
         self.mouse_x, self.mouse_y, self.push = 0, 0, False
         self.loadTexture(filename=self.filename)
         gluPerspective(60, 1.5, 0.1, 100000)
@@ -544,12 +549,12 @@ class Renderer:
             _x, _y = pos_x - self.mouse_x, pos_y - self.mouse_y
             temp = map(lambda a, b: a - b, self.cen, self.eye)
             if _x:
-                fx = _x * pi / 180.0 / 10.0
+                fx = _x * pi / 180.0 / 20.0
                 self.cen[2] = self.eye[2] + sin(fx) * temp[0] + cos(fx) * temp[2]
                 self.cen[0] = self.eye[0] + cos(fx) * temp[0] - sin(fx) * temp[2]
             print _x, _y
             if _y:
-                self.cen[1] -= _y / 10.0
+                self.cen[1] -= _y / 20.0
         self.mouse_x = pos_x
         self.mouse_y = pos_y
 

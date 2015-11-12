@@ -2,6 +2,7 @@ from ImageProperties import ImageProperties
 import pickle
 from GUI_consts import *
 
+
 def save_image_data(ip, out_path):
     assert ip.__class__.__name__ == ImageProperties.__name__
     if '.' not in out_path:

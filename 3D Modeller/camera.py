@@ -39,7 +39,7 @@ class Camera:
             right = np.cross(forward, up)
         R = np.vstack((right, -up, forward))
         if (self.isGL):
-            R1 = cv1.Rodrigues(np.array([np.pi, 0, 0]))[0]
+            R1 = cv2.Rodrigues(np.array([np.pi, 0, 0]))[0]
             R = R1.dot(R)
         self.rotation = R
 
@@ -47,8 +47,8 @@ class Camera:
     def SetRotationVector(self, in_vector):
         self.rotation = cv2.Rodrigues(in_vector)[0]
         if (self.isGL):
-            R1 = cv1.Rodrigues(np.array([np.pi, 0, 0]))[0]
-            R = R1.dot(R)
+            R1 = cv2.Rodrigues(np.array([np.pi, 0, 0]))[0]
+            R = R1.dot(R1)
 
     # rotation from scene to camera coordinates
     def SetQuaternion(self, in_quaternion, order="xyzw"):

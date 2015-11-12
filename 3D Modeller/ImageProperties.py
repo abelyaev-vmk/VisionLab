@@ -15,7 +15,7 @@ class ImageProperties:
     def __init__(self, image_path=''):
         self.image_path = image_path
         self.rp = RectProperties()
-        self.cp = CameraProperties()
+        self.cp = CameraProperties(project=CameraProperties.make_project_name(image_path)) if image_path else None
 
         self.parallel_lines_on_ground_count = 0
         self.perpendicular_lines_count = 0
@@ -102,24 +102,21 @@ class ImageProperties:
 
     def print_data(self, rp=RectProperties(), set_rect=False):
         return
-        if set_rect:
-            self.rp = rp
-        self.cp = CameraProperties(self)
-        print '=========GLOBAL COORDINATES==========='
-        self.cp.print_properties()
-        cp = CameraProperties(self.apply_rect(rp))
-        print '=========LOCAL COORDINATES============'
-        cp.print_properties()
+        # if set_rect:
+        #     self.rp = rp
+        # self.cp = CameraProperties(self)
+        # print '=========GLOBAL COORDINATES==========='
+        # self.cp.print_properties()
+        # cp = CameraProperties(self.apply_rect(rp))
+        # print '=========LOCAL COORDINATES============'
+        # cp.print_properties()
 
     def set_data(self, rp=RectProperties(), set_rect=False):
         return
-        if set_rect:
-            self.rp = rp
-        self.cp = CameraProperties(self.apply_rect(rp))
-        self.cp.set_view_matrix()
-
-
-
+        # if set_rect:
+        #     self.rp = rp
+        # self.cp = CameraProperties(self.apply_rect(rp))
+        # self.cp.set_view_matrix()
 
 
 def render(ip=ImageProperties()):
