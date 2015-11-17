@@ -5,11 +5,13 @@ import numpy as np
 from math import sin, cos, tan
 from os import getcwd
 from os.path import isfile
+from ExtendedImage import ExtendedImage
 
 
 class CameraProperties:
     def __init__(self, project='', location=None, quaternion=None, q_order="xyzw"):
         self.camera = camera.Camera()
+        self.project = project
         if project:
             self.image = self.__find_image(project)
             xml_path = self.__find_xml(project)
@@ -37,6 +39,19 @@ class CameraProperties:
             return project + '.xml'
         else:
             return ''
+
+    def __set_xml_data(self, xml_path):
+        self.xml_type, self.internal, self.external, self.geometry = \
+            get_data_from_xml(xml_path, self.xml_type)
+
+        if self.xml_type == 1:
+            self.camera.UseNonGL()
+            self.camera.SetLocation(self.external['pos'])
+            self.camera.SetQuaternion(self.external['rot'])
+
+        if self.xml_type == 2:
+            self.camera.UseGL()
+            self.camera.SetLocation(self.external['pos'])
 
     @staticmethod
     def make_project_name(path):
@@ -99,13 +114,14 @@ class CameraProperties:
     def get_forward(self):
         return self.camera.GetForward()
 
-    def get_eye_center_up(self, reducing=1):
+    def get_eye_center_up_right(self, reducing=1):
         eye = map(lambda a: a / reducing, self.get_location())
-        cen = map(lambda a: a / reducing, map(lambda b, c: b + c, eye, self.get_forward()))
+        cen = map(lambda b, c: b + c, eye, self.get_forward())
         up = self.get_up()
-        return eye, cen, up
+        right = self.get_right()
+        return eye, cen, up, right
 
-    def img2world(self, point=(0, 0), plane=(0, 0, 1, 0)):
+    def img2world(self, point=(0, 0), plane=(0, 0, 1, 0), reducing=1):
         if len(point) == 2:
             point = (point[0], point[1], 1)
         matr = self.get_calibration_matrix()
@@ -117,23 +133,57 @@ class CameraProperties:
             b[i] = point[i]
         b[3] = 0
         new_point = np.dot(np.linalg.inv(A), b)
-        return np.array(map(lambda p: p / new_point[3], new_point[:3]))
+        return np.array(map(lambda p: p / new_point[3] / reducing, new_point[:3]))
 
-    def world2image(self, point=(0, 0, 0)):
-        pass
+    def world2image(self, point=(0, 0, 0), reducing=1):
+        point = map(lambda p: p * reducing, point[:3]) + [1]
+        image_point = self.get_calibration_matrix().dot(point)
+        return np.array(map(lambda p: p / image_point[2], image_point[:2]))
 
-    def __set_xml_data(self, xml_path):
-        self.xml_type, self.internal, self.external, self.geometry = get_data_from_xml(xml_path, self.xml_type)
-        if self.xml_type == 1:
-            self.camera.UseNonGL()
-            self.camera.SetLocation(self.external['pos'])
-            self.camera.SetQuaternion(self.external['rot'])
-        if self.xml_type == 2:
-            self.camera.UseGL()
-            self.camera.SetLocation(self.external['pos'])
+    def interpolate(self, point=(0, 0)):
+        return 0
+
+    def image2plane(self, reducing=1, max_size=500, plane=(0, 0, 1, 0), key='ground'):
+        min_x, min_y, _ = self.img2world(point=(0, 0), plane=plane, reducing=reducing)
+        max_x, max_y = min_x, min_y
+        for point in ((self.image.size[0] - 1, 0),
+                      (0, self.image.size[1] - 1),
+                      (self.image.size[0] - 1, self.image.size[1] - 1)):
+            wp = self.img2world(point=point, plane=plane, reducing=reducing)
+            # print wp
+            if wp[0] < min_x:
+                min_x = wp[0]
+            if wp[0] > max_x:
+                max_x = wp[0]
+            if wp[1] < min_y:
+                min_y = wp[1]
+            if wp[1] > max_y:
+                max_y = wp[1]
+        print min_x, min_y, max_x, max_y
+        offset = (min_x, min_y)
+        shape = (max_x - min_x, max_y - min_y)
+        # print shape
+        shape_reducing = max(shape[0] / max_size, shape[1] / max_size)
+        shape = map(lambda s: s / shape_reducing, shape)
+        img = ExtendedImage(image=Image.new("RGBA", shape, "black"), offset=offset, shape_reducing=shape_reducing, key=key)
+        for x in range(shape[0]):
+            for y in range(shape[1]):
+                point = self.world2image(point=(x * shape_reducing + offset[0],
+                                                y * shape_reducing + offset[1],
+                                                0),
+                                         reducing=reducing)
+                if not all(0 <= point[i] < self.image.size[i] for i in (0, 1)):
+                    continue
+                img[x, y] = self.image.getpixel((int(point[0]), int(point[1])))
+        img.show()
+        img.save(project=self.project)
+        return img
 
 
 if __name__ == '__main__':
-    cp = CameraProperties(project='SOURCE')
+    cp = CameraProperties(project='SOURCE-2')
     # print cp.get_calibration_matrix()
-    print cp.img2world(point=(2, 2), plane=(0, 0, 1, 0))
+    w = cp.img2world(point=(2, 2), plane=(0, 0, 1, 0))
+    # print w
+    # print cp.world2image(point=w)
+    cp.image2plane(reducing=1)

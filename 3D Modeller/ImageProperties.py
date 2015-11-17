@@ -120,5 +120,7 @@ class ImageProperties:
 
 
 def render(ip=ImageProperties()):
-    renderer = Renderer(ground=make_lines(ip.ground) , filename='SOURCE-2.jpg')
+    renderer = Renderer(ground=make_lines(ip.ground),
+                        project=CameraProperties.make_project_name(ip.image_path),
+                        reducing=1)
     renderer.render()
