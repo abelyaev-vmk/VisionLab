@@ -74,7 +74,7 @@ class ImageProperties:
         if not (type(ground[0]) == list or type(ground[0]) == tuple):
             ground = map(get_pos, ground)
         if out:
-            print 'Add sky', ground
+            print 'Add ground', ground
         self.ground_count = 'Exist'
         self.ground = ground
 

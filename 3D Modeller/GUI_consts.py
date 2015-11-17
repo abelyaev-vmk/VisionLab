@@ -4,6 +4,8 @@ NS_border = N_border + S_border
 EW_border = E_border + W_border
 LD_edge = [S_border, E_border]
 imgTownCenterPath = 'SOURCE-2.jpg'
+data_path = 'DATA\\'
+
 
 GUI_header = '#:import east GUI_consts.E_border\n' \
              '#:import south GUI_consts.S_border\n' \

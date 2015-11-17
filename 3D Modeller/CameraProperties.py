@@ -95,8 +95,8 @@ class CameraProperties:
             matr[1, 2] = self.internal['c'][1]
             matr[2, 2] = 1
             return np.dot(matr, np.array([[self.internal['focal'], 0, 0],
-                                         [0, self.internal['focal'], 0],
-                                         [0, 0, 1]]))
+                                          [0, self.internal['focal'], 0],
+                                          [0, 0, 1]]))
 
     def get_calibration_matrix(self):
         # print 'int:\n', self.get_internal_calibration(), '\next:\n', self.get_external_calibration(), '\n'
@@ -135,7 +135,7 @@ class CameraProperties:
         new_point = np.dot(np.linalg.inv(A), b)
         return np.array(map(lambda p: p / new_point[3] / reducing, new_point[:3]))
 
-    def world2image(self, point=(0, 0, 0), reducing=1):
+    def world2img(self, point=(0, 0, 0), reducing=1):
         point = map(lambda p: p * reducing, point[:3]) + [1]
         image_point = self.get_calibration_matrix().dot(point)
         return np.array(map(lambda p: p / image_point[2], image_point[:2]))
@@ -143,14 +143,13 @@ class CameraProperties:
     def interpolate(self, point=(0, 0)):
         return 0
 
-    def image2plane(self, reducing=1, max_size=500, plane=(0, 0, 1, 0), key='ground'):
+    def image2plane(self, reducing=1, max_size=750, plane=(0, 0, 1, 0), key='ground'):
         min_x, min_y, _ = self.img2world(point=(0, 0), plane=plane, reducing=reducing)
         max_x, max_y = min_x, min_y
         for point in ((self.image.size[0] - 1, 0),
                       (0, self.image.size[1] - 1),
                       (self.image.size[0] - 1, self.image.size[1] - 1)):
             wp = self.img2world(point=point, plane=plane, reducing=reducing)
-            # print wp
             if wp[0] < min_x:
                 min_x = wp[0]
             if wp[0] > max_x:
@@ -162,19 +161,23 @@ class CameraProperties:
         print min_x, min_y, max_x, max_y
         offset = (min_x, min_y)
         shape = (max_x - min_x, max_y - min_y)
-        # print shape
         shape_reducing = max(shape[0] / max_size, shape[1] / max_size)
         shape = map(lambda s: s / shape_reducing, shape)
-        img = ExtendedImage(image=Image.new("RGBA", shape, "black"), offset=offset, shape_reducing=shape_reducing, key=key)
+        img = ExtendedImage(image=Image.new("RGBA", shape, "white"), offset=offset,
+                            shape_reducing=shape_reducing, key=key)
+
         for x in range(shape[0]):
             for y in range(shape[1]):
-                point = self.world2image(point=(x * shape_reducing + offset[0],
-                                                y * shape_reducing + offset[1],
-                                                0),
-                                         reducing=reducing)
+                point = self.world2img(point=(x * shape_reducing + offset[0],
+                                              y * shape_reducing + offset[1],
+                                              0),
+                                       reducing=reducing)
                 if not all(0 <= point[i] < self.image.size[i] for i in (0, 1)):
                     continue
-                img[x, y] = self.image.getpixel((int(point[0]), int(point[1])))
+                # img[x, y] = self.image.getpixel(tuple(map(lambda a, b: int(a - b),
+                #                                           self.image.size,
+                #                                           point[:2])))
+                img[x, y] = self.image.getpixel((int(self.image.size[0] - point[0]), int(point[1])))
         img.show()
         img.save(project=self.project)
         return img

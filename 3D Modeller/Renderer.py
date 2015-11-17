@@ -70,21 +70,46 @@ class Renderer:
         if not self.ground:
             return
         glColor3f(1, 1, 1)
-        # glBindTexture(GL_TEXTURE_2D, self.ground_texture)
+        glBindTexture(GL_TEXTURE_2D, self.ground_texture)
         glBegin(GL_POLYGON)
         glNormal3f(0, 0, 1)
+        count = 0
         for line in self.ground:
+            if count > self.max_count:
+                break
+            count += 1
             _x, _y = line[0]
             wp = self.cp.img2world(point=(_x, _y), plane=(0, 0, 1, 0), reducing=self.reducing)
             # tex_coord = self.ground_image.image_coordinates(wp)
             # print tex_coord
             # width, height = self.ground_image.image.size
             # glTexCoord2f(wp[0] / width, wp[1] / height)
-            # glTexCoord2fv(map(lambda a, b: a / b,
+            # tex_coord = map(lambda a, b: a / b,
             #                   self.ground_image.image_coordinates(wp),
-            #                   self.ground_image.image.size))
+            #                   self.ground_image.size())
+            # if count == self.max_count:
+            #     # print wp
+            #     # print self.ground_image.image.size
+            #     print self.ground_image.shape_reducing, self.ground_image.image.size
+            #     print self.ground_image.offset_x, self.ground_image.offset_y
+            #     print tex_coord, '\n'
+            tex_coord = self.ground_image.texture_coordinates(wp[:2])
+            if count == self.max_count:
+                print tex_coord
+            glTexCoord2fv(tex_coord)
             glVertex3f(float(wp[0]), float(wp[1]), 0)
         glEnd()
+
+    def help_output(self):
+        for line in self.ground:
+            _x, _y = line[0]
+            wp = self.cp.img2world(point=(_x, _y), plane=(0, 0, 1, 0), reducing=self.reducing)
+            ip = self.cp.world2img(point=wp, reducing=self.reducing)
+            tex_coord = self.ground_image.texture_coordinates(wp[:2])
+            print (_x, _y), '->', wp, '->', ip
+            print '->', tex_coord
+            print '->', map(lambda a, b: a * b, tex_coord, self.ground_image.texture_size), '\n'
+        exit()
 
     def __init(self):
         glClearColor(0, 0, 0, 0)
@@ -98,6 +123,10 @@ class Renderer:
         self.eye, self.cen, self.up, self.right = self.cp.get_eye_center_up_right(reducing=self.reducing)
         self.mouse_x, self.mouse_y, self.push = 0, 0, False
         self.__load_ground_texture()
+        glDisable(GL_TEXTURE_2D)
+        glEnable(GL_TEXTURE_2D)
+        self.max_count = 0
+        # self.help_output()
 
     def __reshape(self, width, height):
         glViewport(0, 0, width, height)
@@ -201,6 +230,12 @@ class Renderer:
         self.cen = map(lambda a, b: a - b * s_angle, self.cen, np.cross(self.cen, self.up))
         self.right = map(lambda a, b: a - b * s_angle, self.right, np.cross(self.right, self.up))
 
+    def __increase_max_count(self, _):
+        self.max_count += 1
+
+    def __decrease_max_count(self, _):
+        self.max_count -= 1
+
     def __keyboard(self, key, mx, my):
         speed = 0.8
         print self.cen, self.eye
@@ -216,6 +251,8 @@ class Renderer:
                 'k': self.__look_down,
                 'j': self.__look_left,
                 'l': self.__look_right,
+                'x': self.__increase_max_count,
+                'z': self.__decrease_max_count,
             }[key](speed)
         except KeyError:
             return
@@ -243,7 +280,7 @@ class Renderer:
     def render(self):
         glutInit(sys.argv)
         glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
-        glutInitWindowSize(500, 500)
+        glutInitWindowSize(1024, 720)
         glutCreateWindow('First Try')
         glutDisplayFunc(self.__display)
         glutReshapeFunc(self.__reshape)

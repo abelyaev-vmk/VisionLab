@@ -1,5 +1,6 @@
 from PIL import Image
 import pickle
+from GUI_consts import data_path
 
 
 class ExtendedImage:
@@ -15,30 +16,46 @@ class ExtendedImage:
         return (point[0] / self.shape_reducing - self.offset_x,
                 point[1] / self.shape_reducing - self.offset_y)
 
+    def texture_coordinates(self, (x, y)):
+        return map(lambda a, b: a / b,
+                   ((x - self.offset_x) / self.shape_reducing,
+                    (y - self.offset_y) / self.shape_reducing),
+                   self.image.size)
+
+    def size(self):
+        return list(map(lambda a: a / self.shape_reducing, self.image.size))
+
+    def texture_size(self):
+        return self.image.size
+
     def __getitem__(self, item):
         if not self.image:
             raise ValueError('There\'s no image here!')
         return self.image.getpixel((item[0] / self.shape_reducing - self.offset_x,
                                     item[0] / self.shape_reducing - self.offset_y))
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, (x, y), value):
         if not self.image:
             raise ValueError('There\'s no image here!')
-        self.pixels[key] = value
+        try:
+            self.pixels[x, y] = value
+        except IndexError:
+            print self.image.size[1], self.image.size[0]
+            print y, x
 
     def save(self, project='SOURCE'):
-        source = project + '_' + self.key + '_world_image'
-        self.image.save(source + '_' + self.key + '.jpg')
+        source = data_path + project + '_' + self.key + '_world_image'
+        self.image.save(source + '.jpg')
         with open(source + '.pick', 'wb') as f:
             pickle.dump([self.offset_x, self.offset_y, self.shape_reducing], f)
 
     @staticmethod
     def load(project='SOURCE', key='ground'):
-        source = project + '_' + key + '_world_image'
+        source = data_path + project + '_' + key + '_world_image'
         try:
             with open(source + '.pick', 'rb') as f:
                 ox, oy, r = pickle.load(f)
-            return ExtendedImage(image=Image.open(source + '_' + key + '.jpg'),
+            return ExtendedImage(image=Image.open(source + '.jpg'),
                                  offset=(ox, oy),
                                  shape_reducing=r)
         except IOError:
