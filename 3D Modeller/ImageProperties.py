@@ -1,5 +1,3 @@
-import numpy as np
-import camera
 from Renderer import Renderer, make_lines
 from CameraProperties import CameraProperties
 get_pos = lambda mouse: mouse.pos
@@ -121,6 +119,7 @@ class ImageProperties:
 
 def render(ip=ImageProperties()):
     renderer = Renderer(ground=make_lines(ip.ground),
+                        walls=[make_lines(ip.walls[i]) for i in range(len(ip.walls))],
                         project=CameraProperties.make_project_name(ip.image_path),
                         reducing=1)
     renderer.render()

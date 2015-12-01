@@ -1,6 +1,7 @@
 from PIL import Image
 import pickle
 from GUI_consts import data_path
+from math import sqrt
 
 
 class ExtendedImage:
@@ -11,10 +12,11 @@ class ExtendedImage:
         self.key = key
         if self.image:
             self.pixels = self.image.load()
+        self.user_texture_func = None
 
     def image_coordinates(self, point):
-        return (point[0] / self.shape_reducing - self.offset_x,
-                point[1] / self.shape_reducing - self.offset_y)
+        return ((point[0] - self.offset_x) / self.shape_reducing,
+                (point[1] - self.offset_y) / self.shape_reducing)
 
     def texture_coordinates(self, (x, y)):
         return map(lambda a, b: a / b,
@@ -31,8 +33,9 @@ class ExtendedImage:
     def __getitem__(self, item):
         if not self.image:
             raise ValueError('There\'s no image here!')
-        return self.image.getpixel((item[0] / self.shape_reducing - self.offset_x,
-                                    item[0] / self.shape_reducing - self.offset_y))
+        # return self.image.getpixel((item[0] / self.shape_reducing - self.offset_x,
+        #                             item[1] / self.shape_reducing - self.offset_y))
+        return self.image.getpixel(self.image_coordinates(item[:2]))
 
     def __setitem__(self, (x, y), value):
         if not self.image:
@@ -56,6 +59,7 @@ class ExtendedImage:
             with open(source + '.pick', 'rb') as f:
                 ox, oy, r = pickle.load(f)
             return ExtendedImage(image=Image.open(source + '.jpg'),
+                                 key=key,
                                  offset=(ox, oy),
                                  shape_reducing=r)
         except IOError:

@@ -250,6 +250,6 @@ class GUIApp(App):
 
 
 if __name__ == '__main__':
-    # GUIApp().run()
-    ip = load_image_data('SOURCE-2_data')
-    render(ip=ip)
+    GUIApp().run()
+    # ip = load_image_data('SOURCE-2_data')
+    # render(ip=ip)

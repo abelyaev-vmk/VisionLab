@@ -2,10 +2,16 @@ import camera
 from PIL import Image
 from XMLParser import get_data_from_xml
 import numpy as np
-from math import sin, cos, tan
+from math import sin, cos, tan, sqrt, atan2
 from os import getcwd
 from os.path import isfile
 from ExtendedImage import ExtendedImage
+from Image3D import Image3D
+
+
+def normalize(vect):
+    norm = np.linalg.norm(vect)
+    return vect / norm if norm > 0 else vect
 
 
 class CameraProperties:
@@ -98,6 +104,24 @@ class CameraProperties:
                                           [0, self.internal['focal'], 0],
                                           [0, 0, 1]]))
 
+    def get_internal_parameters(self):
+        f = np.mean(self.internal['fl' if self.xml_type == 1 else 'focal'])
+        cx, cy = self.internal['pp' if self.xml_type == 1 else 'c']
+        pixel_center_offset = 0.5
+        near = 1.0
+        far = 1e2
+        width, height = self.image.size
+        right = (width - (cx + pixel_center_offset)) * (near / f)
+        left = - (cx + pixel_center_offset) * (near / f)
+        top = - (height - (cy + pixel_center_offset)) * (near / f)
+        bottom = (cy + pixel_center_offset) * (near / f)
+        return left, right, bottom, top, near, far
+
+    def get_GL_model_view_matrix(self):
+        view_matrix = self.get_external_calibration()
+        gl_view_matrix = np.asarray(np.vstack((view_matrix, np.array([0, 0, 0, 1]))), np.float32, order='F')
+        return gl_view_matrix
+
     def get_calibration_matrix(self):
         # print 'int:\n', self.get_internal_calibration(), '\next:\n', self.get_external_calibration(), '\n'
         return self.get_internal_calibration().dot(self.get_external_calibration())
@@ -143,7 +167,66 @@ class CameraProperties:
     def interpolate(self, point=(0, 0)):
         return 0
 
-    def image2plane(self, reducing=1, max_size=750, plane=(0, 0, 1, 0), key='ground'):
+    def image2plane_2(self, reducing=1, max_size=750, plane=(0, 0, 1, 0), key='ground', lines=()):
+        corners = []
+        min_coord = self.img2world(point=(0, 0), plane=plane, reducing=reducing)
+        max_coord = min_coord.copy()
+        corners.append(min_coord)
+        for point in ((self.image.size[0] - 1, 0),
+                      (0, self.image.size[1] - 1),
+                      (self.image.size[0] - 1, self.image.size[1] - 1)):
+            wp = self.img2world(point=point, plane=plane, reducing=reducing)
+            min_coord = map(min, min_coord, wp)
+            max_coord = map(max, max_coord, wp)
+            corners.append(wp)
+        offset = min_coord
+        new_corners = map(lambda p: [p[j] - offset[j] for j in (0, 1, 2)], corners)
+        shapeY = max_coord[1] - min_coord[1]
+        shapeX = sqrt((max_coord[0] - min_coord[0]) ** 2 + (max_coord[2] - min_coord[2]) ** 2)
+        shape = (shapeX, shapeY)
+        shape_reducing = max(shape[0] / max_size, shape[1] / max_size)
+        shape = map(lambda s: int(s / shape_reducing), shape)
+        # print shape
+        img = Image3D(image=Image.new("RGBA", shape, "white"), offset3=offset,
+                            shape_reducing=shape_reducing, key=key)
+        alpha = atan2(new_corners[0][2], new_corners[0][0])
+
+        print "IMAGE2PLANE VER2 -", key
+        print "alpha=%f" % alpha
+        print lines
+        outfile = open('DATA\\LINES_VER2.txt', 'w')
+        writed = [0 for _ in xrange(len(lines))]
+
+        for x in range(shape[0]):
+            for y in range(shape[1]):
+                wy = y
+                wz = x * sin(alpha)
+                # wx = wz / tan(alpha)
+                wx = x * cos(alpha)
+                world_point = map(lambda p, o: p * shape_reducing + o, (wx, wy, wz), offset)
+                point = self.world2img(point=world_point)
+                if not all(0 <= point[i] < self.image.size[i] for i in (0, 1)):
+                    continue
+                for line_num, line in enumerate(lines):
+                    if all(abs(point[i] - line[0][i]) <= 1 for i in (0, 1)) and not writed[line_num]:
+                        outfile.write('\nN%d' % line_num)
+                        outfile.write('\n--IMAGE>        ' + point[:2].__str__() + '\n')
+                        outfile.write('\n--WORLD>        ' + world_point.__str__())
+                        outfile.write('\n--TEXTURE>      ' + img.texture_coordinates(world_point).__str__())
+                        outfile.write('\n--TEXTURE_IMAGE>' + (x, y).__str__())
+                        writed[line_num] = 1
+
+                img[x, y] = self.image.getpixel((int(point[0]), int(self.image.size[1] - point[1])))
+            if x == shape[0] / 2:
+                print "HALF DONE"
+                outfile.write("\nHALF DONE\n")
+        outfile.close()
+        img.save(project=self.project)
+        img.show()
+
+        return img
+
+    def image2plane(self, reducing=1, max_size=750, plane=(0, 0, 1, 0), key='ground', lines=()):
         min_x, min_y, _ = self.img2world(point=(0, 0), plane=plane, reducing=reducing)
         max_x, max_y = min_x, min_y
         for point in ((self.image.size[0] - 1, 0),
@@ -163,8 +246,11 @@ class CameraProperties:
         shape = (max_x - min_x, max_y - min_y)
         shape_reducing = max(shape[0] / max_size, shape[1] / max_size)
         shape = map(lambda s: s / shape_reducing, shape)
-        img = ExtendedImage(image=Image.new("RGBA", shape, "white"), offset=offset,
+        img = Image3D(image=Image.new("RGBA", shape, "white"), offset2=offset,
                             shape_reducing=shape_reducing, key=key)
+        outfile = open('DATA\\LINES_TEMPLATE.txt', 'w')
+        writed = [0 for _ in xrange(len(lines))]
+        print '\n-----TEMPLATE-----\n'
 
         for x in range(shape[0]):
             for y in range(shape[1]):
@@ -174,12 +260,21 @@ class CameraProperties:
                                        reducing=reducing)
                 if not all(0 <= point[i] < self.image.size[i] for i in (0, 1)):
                     continue
-                # img[x, y] = self.image.getpixel(tuple(map(lambda a, b: int(a - b),
-                #                                           self.image.size,
-                #                                           point[:2])))
-                img[x, y] = self.image.getpixel((int(self.image.size[0] - point[0]), int(point[1])))
+                for line_num, line in enumerate(lines):
+                    if all(abs(point[i] - line[0][i]) <= 1 for i in (0, 1)) and not writed[line_num]:
+                        outfile.write('\nN%d' % line_num)
+                        outfile.write('\n--IMAGE>        ' + point[:2].__str__() + '\n')
+                        outfile.write('\n--WORLD>        ' +
+                                      (x * shape_reducing + offset[0], y * shape_reducing + offset[1]).__str__())
+                        outfile.write('\n--TEXTURE>      ' + map(lambda a, b: float(a) / b, (x, y), shape).__str__())
+                        outfile.write('\n--TEXTURE_PARAM> %d %d _ _ _ %d %d' % (x, y, shape[0], shape[1]))
+                        outfile.write('\n--TEXTURE_IMAGE>' + (x, y).__str__())
+                        writed[line_num] = 1
+                img[x, y] = self.image.getpixel((int(point[0]), int(self.image.size[1] - point[1])))
+        outfile.close()
         img.show()
         img.save(project=self.project)
+
         return img
 
 
