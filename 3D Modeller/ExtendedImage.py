@@ -2,7 +2,7 @@ from PIL import Image
 import pickle
 from GUI_consts import data_path
 from math import sqrt
-
+from CommonFunctions import axis_rotation_matrix
 
 class ExtendedImage:
     def __init__(self, image=None, offset=(0, 0), shape_reducing=1, key='ground'):

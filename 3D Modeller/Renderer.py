@@ -3,27 +3,11 @@ import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from PIL import Image
+# from PIL import Image
 from CameraProperties import CameraProperties
-from ExtendedImage import ExtendedImage
+# from ExtendedImage import ExtendedImage
 from Image3D import Image3D
-
-
-def normalize(vect):
-    norm = np.linalg.norm(vect)
-    return vect / norm if norm > 0 else vect
-
-
-def make_lines(points):
-    lines = []
-    for i in range(len(points)):
-        line = [points[i], points[(i + 1) % len(points)]]
-        lines.append(line)
-    return lines
-
-
-def dist(p1, p2):
-    return sqrt(sum(map(lambda a, b: (a - b) ** 2, p1, p2)))
+from CommonFunctions import normalize, make_lines, dist
 
 
 class Renderer:

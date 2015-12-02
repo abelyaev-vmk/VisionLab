@@ -2,16 +2,12 @@ import camera
 from PIL import Image
 from XMLParser import get_data_from_xml
 import numpy as np
-from math import sin, cos, tan, sqrt, atan2
+from math import sin, cos, tan, sqrt, atan2, pi
 from os import getcwd
 from os.path import isfile
-from ExtendedImage import ExtendedImage
+# from ExtendedImage import ExtendedImage
 from Image3D import Image3D
-
-
-def normalize(vect):
-    norm = np.linalg.norm(vect)
-    return vect / norm if norm > 0 else vect
+from CommonFunctions import axis_rotation_matrix, ground_axis
 
 
 class CameraProperties:
@@ -180,6 +176,10 @@ class CameraProperties:
             max_coord = map(max, max_coord, wp)
             corners.append(wp)
         offset = min_coord
+        axis = ground_axis(corners)
+        rotation_matrix = axis_rotation_matrix(axis, -pi / 2 if key != 'ground' else 0)
+        print axis
+        print rotation_matrix
         new_corners = map(lambda p: [p[j] - offset[j] for j in (0, 1, 2)], corners)
         shapeY = max_coord[1] - min_coord[1]
         shapeX = sqrt((max_coord[0] - min_coord[0]) ** 2 + (max_coord[2] - min_coord[2]) ** 2)
@@ -188,21 +188,22 @@ class CameraProperties:
         shape = map(lambda s: int(s / shape_reducing), shape)
         # print shape
         img = Image3D(image=Image.new("RGBA", shape, "white"), offset3=offset,
-                            shape_reducing=shape_reducing, key=key)
+                            shape_reducing=shape_reducing, key=key, axis=axis)
         alpha = atan2(new_corners[0][2], new_corners[0][0])
 
         print "IMAGE2PLANE VER2 -", key
         print "alpha=%f" % alpha
         print lines
-        outfile = open('DATA\\LINES_VER2.txt', 'w')
+        outfile = open('DATA\\LINES_VER2_%s.txt' % key, 'w')
         writed = [0 for _ in xrange(len(lines))]
 
         for x in range(shape[0]):
             for y in range(shape[1]):
-                wy = y
-                wz = x * sin(alpha)
-                # wx = wz / tan(alpha)
-                wx = x * cos(alpha)
+                # wy = y
+                # wz = x * sin(alpha)
+                # # wx = wz / tan(alpha)
+                # wx = x * cos(alpha)
+                wx, wy, wz = np.dot(rotation_matrix, np.asarray([x, y, 0]))
                 world_point = map(lambda p, o: p * shape_reducing + o, (wx, wy, wz), offset)
                 point = self.world2img(point=world_point)
                 if not all(0 <= point[i] < self.image.size[i] for i in (0, 1)):
