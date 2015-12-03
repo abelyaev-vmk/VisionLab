@@ -2,13 +2,16 @@ from PIL import Image
 import pickle
 from GUI_consts import data_path
 from math import sqrt, pi
-from CommonFunctions import axis_rotation_matrix
+from CommonFunctions import *
 import numpy as np
 
 
 class Image3D:
-    def __init__(self, image=None, offset2=None, offset3=None, axis=None, shape_reducing=1, key='ground'):
+    def __init__(self, image=None, offset2=None, offset3=None, rot_matrix=None,
+                 trans_scale=None, transition=None, shape_reducing=1, key='ground', use_offset=True):
         self.image = image
+
+        self.use_offset = (offset2 or offset3) and use_offset
 
         if offset2:
             self.offset_x, self.offset_y = offset2
@@ -24,28 +27,40 @@ class Image3D:
         else:
             self.pixels = None
 
-        if axis:
-            self.axis = axis
-            self.rotation_matrix = axis_rotation_matrix(axis, pi / 2)
-        else:
-            self.axis, self.rotation_matrix = None, None
+        self.rotation_matrix = rot_matrix
+        self.translate_and_scale_matrix = trans_scale
+        self.transition_matrix = transition
         self.key = key
         self.size = self.image.size
 
     def texture_coordinates(self, (x, y, z)):
-        if not self.axis:
+        # noinspection PyTypeChecker
+        if self.use_offset:
+            x, y, z = np.dot(het2hom(matrix=self.rotation_matrix), (x, y, z))
             x, y, z = (x - self.offset_x) / self.shape_reducing, \
                       (y - self.offset_y) / self.shape_reducing, \
                       (z - self.offset_z) / self.shape_reducing
-            tex_x, tex_y = sqrt(x ** 2 + z ** 2), y
-            return map(lambda a, b: a / b, (tex_x, tex_y), self.size)
-        else:
-            x, y, z = (x - self.offset_x) / self.shape_reducing, \
-                      (y - self.offset_y) / self.shape_reducing, \
-                      (z - self.offset_z) / self.shape_reducing
-            # noinspection PyTypeChecker
-            x, y, z = np.dot(self.rotation_matrix, np.asarray([x, y, z]))
             return map(lambda a, b: a / b, (x, y), self.size)
+        else:
+            # x, y, z = np.dot(self.rotation_matrix, (x, y, z))
+            # x, y, _, _ = np.dot(self.translate_and_scale_matrix, (x, y, z, 1))
+            ip = self.transition_matrix * np.matrix([x, y, z, 1]).transpose()
+            x = ip[0]
+            y = ip[1]
+            return map(lambda a, b: a / b, (x, y), self.size)
+        # if not self.axis:
+        #     x, y, z = (x - self.offset_x) / self.shape_reducing, \
+        #               (y - self.offset_y) / self.shape_reducing, \
+        #               (z - self.offset_z) / self.shape_reducing
+        #     tex_x, tex_y = sqrt(x ** 2 + z ** 2), y
+        #     return map(lambda a, b: a / b, (tex_x, tex_y), self.size)
+        # else:
+        #     x, y, z = (x - self.offset_x) / self.shape_reducing, \
+        #               (y - self.offset_y) / self.shape_reducing, \
+        #               (z - self.offset_z) / self.shape_reducing
+        #     # noinspection PyTypeChecker
+        #     x, y, z = np.dot(self.rotation_matrix, np.asarray([x, y, z]))
+        #     return map(lambda a, b: a / b, (x, y), self.size)
 
     def __setitem__(self, (x, y), value):
         if not self.image:
@@ -62,18 +77,20 @@ class Image3D:
         source = data_path + project + '_' + self.key + '_world_image'
         self.image.save(source + '.jpg')
         with open(source + '.pick', 'wb') as f:
-            pickle.dump([self.offset_x, self.offset_y, self.offset_z, self.shape_reducing], f)
+            pickle.dump([self.offset_x, self.offset_y, self.offset_z, self.shape_reducing, self.use_offset,
+                         self.key, self.rotation_matrix, self.translate_and_scale_matrix, self.transition_matrix], f)
 
     @staticmethod
     def load(project='SOURCE', key='ground'):
         source = data_path + project + '_' + key + '_world_image'
         try:
             with open(source + '.pick', 'rb') as f:
-                ox, oy, oz, r = pickle.load(f)
+                ox, oy, oz, sr, uo, k, rm, tsm, tm = pickle.load(f)
             return Image3D(image=Image.open(source + '.jpg'),
-                                 key=key,
-                                 offset3=(ox, oy, oz),
-                                 shape_reducing=r)
+                           key=key,
+                           offset3=(ox, oy, oz), use_offset=uo,
+                           shape_reducing=sr,
+                           rot_matrix=rm, trans_scale=tsm, transition=tm)
         except IOError:
             return None
 

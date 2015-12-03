@@ -7,7 +7,7 @@ from os import getcwd
 from os.path import isfile
 # from ExtendedImage import ExtendedImage
 from Image3D import Image3D
-from CommonFunctions import axis_rotation_matrix, ground_axis
+from CommonFunctions import *
 
 
 class CameraProperties:
@@ -164,61 +164,70 @@ class CameraProperties:
         return 0
 
     def image2plane_2(self, reducing=1, max_size=750, plane=(0, 0, 1, 0), key='ground', lines=()):
-        corners = []
-        min_coord = self.img2world(point=(0, 0), plane=plane, reducing=reducing)
-        max_coord = min_coord.copy()
-        corners.append(min_coord)
-        for point in ((self.image.size[0] - 1, 0),
-                      (0, self.image.size[1] - 1),
-                      (self.image.size[0] - 1, self.image.size[1] - 1)):
-            wp = self.img2world(point=point, plane=plane, reducing=reducing)
-            min_coord = map(min, min_coord, wp)
-            max_coord = map(max, max_coord, wp)
-            corners.append(wp)
-        offset = min_coord
-        axis = ground_axis(corners)
-        rotation_matrix = axis_rotation_matrix(axis, -pi / 2 if key != 'ground' else 0)
-        print axis
-        print rotation_matrix
-        new_corners = map(lambda p: [p[j] - offset[j] for j in (0, 1, 2)], corners)
-        shapeY = max_coord[1] - min_coord[1]
-        shapeX = sqrt((max_coord[0] - min_coord[0]) ** 2 + (max_coord[2] - min_coord[2]) ** 2)
-        shape = (shapeX, shapeY)
-        shape_reducing = max(shape[0] / max_size, shape[1] / max_size)
-        shape = map(lambda s: int(s / shape_reducing), shape)
-        # print shape
-        img = Image3D(image=Image.new("RGBA", shape, "white"), offset3=offset,
-                            shape_reducing=shape_reducing, key=key, axis=axis)
-        alpha = atan2(new_corners[0][2], new_corners[0][0])
+        # # CORNERS IN WORLD
+        corners = map(lambda p: self.img2world(point=p, plane=plane, reducing=reducing),
+                      ((0, 0),
+                       (self.image.size[0] - 1, 0),
+                       (0, self.image.size[1] - 1),
+                       (self.image.size[0] - 1, self.image.size[1] - 1)))
 
-        print "IMAGE2PLANE VER2 -", key
-        print "alpha=%f" % alpha
-        print lines
+        # # # OFFSET
+        # corners = map(lambda c: het2hom(vector=rot_matrix * np.matrix(hom2het(vector=c)).transpose()), corners)
+        min_coord = corners[0]
+        max_coord = min_coord.copy()
+        for corner in corners:
+            min_coord = map(min, min_coord, corner)
+            max_coord = map(max, max_coord, corner)
+        offset = map(float, min_coord[:2])
+
+        # # # SHAPE
+        shape = map(lambda m, o: m - o, max_coord[:2], offset)
+        shape_reducing = float(max(shape[0] / max_size, shape[1] / max_size))
+        shape = map(lambda s: int(s / shape_reducing), shape)
+
+        # # # TRANSLATION AND SCALE
+        print '\nSHAPE', shape_reducing, '\n'
+        translation_and_scale_matrix = translate_and_scale_matrix((-offset[0], -offset[1], 0), 1 / shape_reducing)
+
+        print lines[0][0]
+        print hom2het(lines[0][0])
+
+        # # # ROTATION !!!!!!
+        img_lines = map(lambda p:
+                        self.img2world(point=het2hom(translation_and_scale_matrix *
+                                                     np.matrix(hom2het([p[0], p[1], 0])).transpose()),
+                                       plane=plane, reducing=reducing), [line[0] for line in lines])
+        axis = ground_axis(img_lines)
+        rot_matrix = hom2het(matrix=axis_rotation_matrix(axis, -pi / 2 if key[:4] == 'wall' else 0))
+
+        # # # TRANSITION
+        transition_matrix = translation_and_scale_matrix * rot_matrix
+        inv_transition_matrix = np.linalg.inv(transition_matrix)
+
+        img = Image3D(image=Image.new("RGBA", shape, "white"), shape_reducing=shape_reducing, key=key,
+                      transition=transition_matrix)
         outfile = open('DATA\\LINES_VER2_%s.txt' % key, 'w')
         writed = [0 for _ in xrange(len(lines))]
 
-        for x in range(shape[0]):
-            for y in range(shape[1]):
-                # wy = y
-                # wz = x * sin(alpha)
-                # # wx = wz / tan(alpha)
-                # wx = x * cos(alpha)
-                wx, wy, wz = np.dot(rotation_matrix, np.asarray([x, y, 0]))
-                world_point = map(lambda p, o: p * shape_reducing + o, (wx, wy, wz), offset)
-                point = self.world2img(point=world_point)
+        for ix in range(shape[0]):
+            for iy in range(shape[1]):
+                wp = inv_transition_matrix * np.matrix(hom2het(vector=[ix, iy, 0])).transpose()
+                wx, wy, wz = np.array(het2hom(wp)).ravel()
+                point = self.world2img(point=(wx, wy, wz), reducing=reducing)
                 if not all(0 <= point[i] < self.image.size[i] for i in (0, 1)):
                     continue
                 for line_num, line in enumerate(lines):
-                    if all(abs(point[i] - line[0][i]) <= 1 for i in (0, 1)) and not writed[line_num]:
+                    world_point = wx, wy, wz
+                    if all(abs(point[i] - line[0][i]) <= 5 for i in (0, 1)) and not writed[line_num]:
                         outfile.write('\nN%d' % line_num)
                         outfile.write('\n--IMAGE>        ' + point[:2].__str__() + '\n')
                         outfile.write('\n--WORLD>        ' + world_point.__str__())
                         outfile.write('\n--TEXTURE>      ' + img.texture_coordinates(world_point).__str__())
-                        outfile.write('\n--TEXTURE_IMAGE>' + (x, y).__str__())
+                        outfile.write('\n--TEXTURE_IMAGE>' + (ix, iy).__str__())
                         writed[line_num] = 1
 
-                img[x, y] = self.image.getpixel((int(point[0]), int(self.image.size[1] - point[1])))
-            if x == shape[0] / 2:
+                img[ix, iy] = self.image.getpixel((int(point[0]), int(self.image.size[1] - point[1])))
+            if ix == shape[0] / 2:
                 print "HALF DONE"
                 outfile.write("\nHALF DONE\n")
         outfile.close()
@@ -248,7 +257,7 @@ class CameraProperties:
         shape_reducing = max(shape[0] / max_size, shape[1] / max_size)
         shape = map(lambda s: s / shape_reducing, shape)
         img = Image3D(image=Image.new("RGBA", shape, "white"), offset2=offset,
-                            shape_reducing=shape_reducing, key=key)
+                      shape_reducing=shape_reducing, key=key)
         outfile = open('DATA\\LINES_TEMPLATE.txt', 'w')
         writed = [0 for _ in xrange(len(lines))]
         print '\n-----TEMPLATE-----\n'

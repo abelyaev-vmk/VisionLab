@@ -16,6 +16,14 @@ def axis_rotation_matrix(axis=(1, 1, 0), theta=pi):
     return M
 
 
+def translate_and_scale_matrix(translation=(0, 0, 0), scale=1):
+    tx, ty, tz = translation
+    translation_matrix = np.matrix([[1, 0, 0, tx], [0, 1, 0, ty], [0, 0, 1, tz], [0, 0, 0, 1]])
+    scale_matrix = np.matrix([[scale, 0, 0, 0], [0, scale, 0, 0], [0, 0, scale, 0], [0, 0, 0, 1]])
+    print translation_matrix, '\n', scale_matrix, '\n', scale
+    return scale_matrix * translation_matrix
+
+
 def normalize(vect):
     norm = np.linalg.norm(vect)
     return vect / norm if norm > 0 else vect
@@ -36,11 +44,31 @@ def dist(p1, p2):
 def ground_axis(points=()):
     if not points:
         return None
+    print 'Points:', points
     ground_points = []
     for point in points:
         if abs(point[2]) < 1:
             ground_points.append(point)
+    print 'Ground points:', ground_points
     ground_points.sort(key=lambda p: abs(p[2]))
     ans = ground_points[:2]
     ans.sort(key=lambda p: sqrt(p[0] ** 2 + p[1] ** 2))
+    print 'Ans:', ans
     return float(ans[1][0] - ans[0][0]), float(ans[1][1] - ans[1][0]), 0
+
+
+def hom2het(vector=None, matrix=None):
+    if vector is not None:
+        return np.append(np.array(vector), 1)
+    if matrix is not None:
+        temp = np.zeros((4, 4))
+        temp[:3, :3] = matrix[:, :]
+        temp[3, 3] = 1
+        return temp
+
+
+def het2hom(vector=None, matrix=None):
+    if vector is not None:
+        return np.array(vector[:3]) / vector[3]
+    if matrix is not None:
+        return matrix[:3, :3] / matrix[3][3]
