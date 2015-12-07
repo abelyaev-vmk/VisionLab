@@ -171,6 +171,14 @@ class CameraProperties:
                        (0, self.image.size[1] - 1),
                        (self.image.size[0] - 1, self.image.size[1] - 1)))
 
+        # # # ROTATION !!!!!!
+        img_lines = map(lambda p:
+                        self.img2world(point=p,
+                                       plane=plane, reducing=reducing), [line[0] for line in lines])
+        axis = ground_axis(img_lines)
+        axis[1] = -axis[1]
+        rot_matrix = hom2het(matrix=axis_rotation_matrix(axis, pi / 2 if key[:4] == 'wall' else 0))
+
         # # # OFFSET
         # corners = map(lambda c: het2hom(vector=rot_matrix * np.matrix(hom2het(vector=c)).transpose()), corners)
         min_coord = corners[0]
@@ -181,7 +189,7 @@ class CameraProperties:
         offset = map(float, min_coord[:2])
 
         # # # SHAPE
-        shape = map(lambda m, o: m - o, max_coord[:2], offset)
+        shape = map(lambda m, o: m - o, max_coord[:2], offset[:2])
         shape_reducing = float(max(shape[0] / max_size, shape[1] / max_size))
         shape = map(lambda s: int(s / shape_reducing), shape)
 
@@ -191,14 +199,6 @@ class CameraProperties:
 
         print lines[0][0]
         print hom2het(lines[0][0])
-
-        # # # ROTATION !!!!!!
-        img_lines = map(lambda p:
-                        self.img2world(point=het2hom(translation_and_scale_matrix *
-                                                     np.matrix(hom2het([p[0], p[1], 0])).transpose()),
-                                       plane=plane, reducing=reducing), [line[0] for line in lines])
-        axis = ground_axis(img_lines)
-        rot_matrix = hom2het(matrix=axis_rotation_matrix(axis, -pi / 2 if key[:4] == 'wall' else 0))
 
         # # # TRANSITION
         transition_matrix = translation_and_scale_matrix * rot_matrix

@@ -54,7 +54,7 @@ def ground_axis(points=()):
     ans = ground_points[:2]
     ans.sort(key=lambda p: sqrt(p[0] ** 2 + p[1] ** 2))
     print 'Ans:', ans
-    return float(ans[1][0] - ans[0][0]), float(ans[1][1] - ans[1][0]), 0
+    return [float(ans[1][0] - ans[0][0]), float(ans[1][1] - ans[1][0]), 0]
 
 
 def hom2het(vector=None, matrix=None):
@@ -72,3 +72,19 @@ def het2hom(vector=None, matrix=None):
         return np.array(vector[:3]) / vector[3]
     if matrix is not None:
         return matrix[:3, :3] / matrix[3][3]
+
+
+def perpendicular_vector(vector=None, plane='z=0'):
+    if vector is not None:
+        if plane == 'z=0':
+            a, b = vector[:2]
+            if abs(a) < 1e10:
+                x = 1
+                y = 0
+            elif abs(b) < 1e10:
+                x = 0
+                y = 1
+            else:
+                x = 1
+                y = -a / b
+            return x, y, 0
