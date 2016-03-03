@@ -2,10 +2,17 @@ import numpy as np
 from math import *
 
 
+def matrix3to4(matrix):
+    m = np.zeros((4, 4))
+    m[:3, :3] = matrix[:, :]
+    m[3, 3] = 1
+    return np.matrix(m)
+
+
 def axis_rotation_matrix(axis=(1, 1, 0), theta=pi):
     axis = np.asarray(axis)
     theta = np.asarray(theta)
-    axis /= sqrt(np.dot(axis, axis))
+    axis = axis /  sqrt(np.dot(axis, axis))
     a = cos(theta / 2)
     b, c, d = -axis * sin(theta / 2)
     aa, bb, cc, dd = a ** 2, b ** 2, c ** 2, d ** 2
@@ -14,6 +21,16 @@ def axis_rotation_matrix(axis=(1, 1, 0), theta=pi):
                   [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
                   [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
     return M
+
+
+def axis_rotation_matrix_v2(axis=(1, 1, 0), theta=pi):
+    x, y, z = axis
+    xx, xy, xz, yx, yy, yz, zx, zy, zz = x * x, x * y, x * z, y * x, y * y, y * z, z * x, z * y, z * z
+    ct, st = cos(theta), sin(theta)
+    matrix = np.array([[ct + (1 - ct) * xx, (1 - ct) * xy + st * z, (1 - ct) * xz + st * y],
+                       [(1 - ct) * yx + st * z, ct + (1 - ct) * yy, (1 - ct) * yz - st * x],
+                       [(1 - ct) * zx - st * y, (1 - ct) * zy + st * x, ct + (1 - ct) * zz]])
+    return matrix
 
 
 def translate_and_scale_matrix(translation=(0, 0, 0), scale=1):
@@ -41,20 +58,26 @@ def dist(p1, p2):
     return sqrt(sum(map(lambda a, b: (a - b) ** 2, p1, p2)))
 
 
-def ground_axis(points=()):
+def dot((vx1, vy1, vz1), (vx2, vy2, vz2)):
+    return vx1 * vx2 + vy1 * vy2 + vz1 * vz2
+
+
+def ground_axis(points=(), ground=(0, 0, 1, 0)):
     if not points:
         return None
     print 'Points:', points
     ground_points = []
     for point in points:
-        if abs(point[2]) < 1:
+        if abs(dot(point, ground[:3])) < 1:
             ground_points.append(point)
+        # if abs(point[2]) < 1:
+        #     ground_points.append(point)
     print 'Ground points:', ground_points
     ground_points.sort(key=lambda p: abs(p[2]))
     ans = ground_points[:2]
     ans.sort(key=lambda p: sqrt(p[0] ** 2 + p[1] ** 2))
     print 'Ans:', ans
-    return [float(ans[1][0] - ans[0][0]), float(ans[1][1] - ans[1][0]), 0]
+    return [float(ans[1][0] - ans[0][0]), float(ans[1][1] - ans[0][1]), 0]
 
 
 def hom2het(vector=None, matrix=None):
