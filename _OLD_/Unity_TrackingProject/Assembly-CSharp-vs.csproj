@@ -52,6 +52,7 @@
      <Compile Include="Assets\EasyRunScript.cs" />
      <Compile Include="Assets\EasyRunner.cs" />
      <Compile Include="Assets\MovieMake.cs" />
+     <Compile Include="Assets\OPENGL_PROJ\Camera_Properties.cs" />
      <Compile Include="Assets\ObjectRotation.cs" />
      <Compile Include="Assets\PostProcessDepthGrayscale.cs" />
      <Compile Include="Assets\RUNRUN.cs" />
@@ -138,10 +139,10 @@
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
  </Reference>
  <Reference Include="LitJson">
- <HintPath>C:/Users/Andrew/Desktop/VisionLab/_OLD_/Unity_TrackingProject/Assets/UMA/UMA_Project/DLL/LitJson.dll</HintPath>
+ <HintPath>E:/VisionLab/VisionLab/_OLD_/Unity_TrackingProject/Assets/UMA/UMA_Project/DLL/LitJson.dll</HintPath>
  </Reference>
  <Reference Include="UMA">
- <HintPath>C:/Users/Andrew/Desktop/VisionLab/_OLD_/Unity_TrackingProject/Assets/UMA/UMA_Project/DLL/UMA.dll</HintPath>
+ <HintPath>E:/VisionLab/VisionLab/_OLD_/Unity_TrackingProject/Assets/UMA/UMA_Project/DLL/UMA.dll</HintPath>
  </Reference>
  <Reference Include="UnityEditor.iOS.Extensions.Xcode">
  <HintPath>C:/Program Files/Unity/Editor/Data/PlaybackEngines/iOSSupport/UnityEditor.iOS.Extensions.Xcode.dll</HintPath>

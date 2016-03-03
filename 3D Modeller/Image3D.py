@@ -34,32 +34,9 @@ class Image3D:
         self.size = self.image.size
 
     def texture_coordinates(self, (x, y, z)):
-        # noinspection PyTypeChecker
-        # if self.use_offset:
-        #     x, y, z = np.dot(het2hom(matrix=self.rotation_matrix), (x, y, z))
-        #     x, y, z = (x - self.offset_x) / self.shape_reducing, \
-        #               (y - self.offset_y) / self.shape_reducing, \
-        #               (z - self.offset_z) / self.shape_reducing
-        #     return map(lambda a, b: a / b, (x, y), self.size)
-        # else:
-            # x, y, z = np.dot(self.rotation_matrix, (x, y, z))
-            # x, y, _, _ = np.dot(self.translate_and_scale_matrix, (x, y, z, 1))
         ip = self.transition_matrix * np.matrix([x, y, z, 1]).transpose()
         x, y, _ = het2hom(map(float, np.array(ip).ravel()))
         return map(lambda a, b: a / b, (x, y), self.size)
-        # if not self.axis:
-        #     x, y, z = (x - self.offset_x) / self.shape_reducing, \
-        #               (y - self.offset_y) / self.shape_reducing, \
-        #               (z - self.offset_z) / self.shape_reducing
-        #     tex_x, tex_y = sqrt(x ** 2 + z ** 2), y
-        #     return map(lambda a, b: a / b, (tex_x, tex_y), self.size)
-        # else:
-        #     x, y, z = (x - self.offset_x) / self.shape_reducing, \
-        #               (y - self.offset_y) / self.shape_reducing, \
-        #               (z - self.offset_z) / self.shape_reducing
-        #     # noinspection PyTypeChecker
-        #     x, y, z = np.dot(self.rotation_matrix, np.asarray([x, y, z]))
-        #     return map(lambda a, b: a / b, (x, y), self.size)
 
     def __setitem__(self, (x, y), value):
         if not self.image:

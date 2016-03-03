@@ -111,13 +111,14 @@ public class ObjectRotation : MonoBehaviour {
 
 
 
-		/*if (user_references)
+		/*else if (user_references)
 		{
 			camera.transform.position = new Vector3(x, y, z);
 			camera.transform.rotation = Quaternion.Euler(OX_rot, OY_rot, OZ_rot);
 
 		}
-		else */if (user_quaternion)
+		else */
+		else if (user_quaternion)
 		{
 			camera.fieldOfView = 2 * Mathf.Atan2(PrincipalPointY, FocalLengthY) * 180 / Mathf.PI;
 			//camera.transform.localRotation = new Quaternion(RotationX, RotationY, RotationZ, RotationW);

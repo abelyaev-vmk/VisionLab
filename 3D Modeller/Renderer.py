@@ -8,6 +8,9 @@ from CameraProperties import CameraProperties
 # from ExtendedImage import ExtendedImage
 from Image3D import Image3D
 from CommonFunctions import normalize, make_lines, dist
+from CameraInformation import CameraInformation
+
+PROJECTION_SIZE = 100  # 2100
 
 
 class Renderer:
@@ -18,17 +21,30 @@ class Renderer:
         self.reducing = reducing
         self.project = project
         self.cp = CameraProperties(project=self.project)
+
+        self.change_y_coordinate()
+
         self.ground_plane = (0, 0, 1, 0)
-        self.walls_planes = [self.define_wall_plane(wall) for wall in walls]
+        self.walls_planes = [self.define_wall_plane(wall) for wall in self.walls]
         self.get_ground_image()
         self.get_walls_images()
+
+    def change_y_coordinate(self):
+        change_y_in_lines = lambda lines: map(lambda line:
+                                              map(lambda point: [point[0], self.cp.image.size[1] - point[1] - 1],
+                                                  line),
+                                              lines)
+        self.ground = change_y_in_lines(self.ground)
+        self.walls = map(lambda wall: change_y_in_lines(wall), self.walls)
 
     def get_ground_image(self):
         self.ground_image = Image3D.load(self.project, key='ground')
         if not self.ground_image:
-            self.ground_image = self.cp.image2plane_2(reducing=self.reducing,
-                                                      plane=self.ground_plane,
-                                                      lines=self.ground)
+            self.ground_image = self.cp.image2plane_v2(reducing=self.reducing,
+                                                       plane=self.ground_plane,
+                                                       lines=self.ground,
+                                                       key='ground',
+                                                       max_size=PROJECTION_SIZE)
 
     def define_wall_plane(self, wall):
         points = []
@@ -51,7 +67,7 @@ class Renderer:
         x1, y1, z1 = map(float, self.cp.img2world(point=points_on_plane[1],
                                                   plane=self.ground_plane,
                                                   reducing=self.reducing))
-        x2, y2, z2 = x0, y0, 5
+        x2, y2, z2 = x0, y0, 5.0
         # A = np.linalg.det(np.matrix([[y1 - y0, z1 - z0], [y2 - z0, z2 - z0]]))
         # B = -np.linalg.det(np.matrix([[x1 - x0, z1 - z0], [x2 - x0, z2 - z0]]))
         # C = 0
@@ -72,10 +88,11 @@ class Renderer:
         for num, wall in enumerate(self.walls):
             img = Image3D.load(self.project, key='wall' + str(num))
             if not img:
-                img = self.cp.image2plane_2(reducing=self.reducing,
-                                            plane=self.define_wall_plane(wall),
-                                            key='wall' + str(num),
-                                            lines=wall)
+                img = self.cp.image2plane_v2(reducing=self.reducing,
+                                             plane=self.walls_planes[num],
+                                             key='wall' + str(num),
+                                             lines=wall,
+                                             max_size=PROJECTION_SIZE)
             self.walls_images.append(img)
 
     @staticmethod
@@ -114,6 +131,7 @@ class Renderer:
         glColor3f(1, 1, 1)
         glBegin(GL_POLYGON)
         glNormal3f(0, 0, 1)
+
         for line in self.ground:
             _x, _y = line[0]
             wp = self.cp.img2world(point=(_x, _y),
@@ -140,6 +158,16 @@ class Renderer:
                 print 'WALL', wp, tex_coord
                 glVertex3fv(wp)
             glEnd()
+
+    def __draw_cube(self, (x, y, z), size=2):
+        glBegin(GL_POLYGON)
+        for _x in (-1, 1):
+            for _y in (-1, 1):
+                for _z in (-1, 1):
+                    glNormal3f(0, 0, 1)
+                    glVertex3f(x + size * _x, y + size * _y, z + size * _z)
+                    glColor3f(1, 1, 1)
+        glEnd()
 
     def help_output(self):
 
@@ -196,7 +224,46 @@ class Renderer:
         outfile.close()
         exit()
 
+    def __save_matrices(self):
+        c_matr = self.cp.get_calibration_matrix()
+        p_matr = glGetFloatv(GL_PROJECTION_MATRIX)
+        mv_matr = glGetFloatv(GL_MODELVIEW_MATRIX)
+        CameraInformation(calibration=c_matr, projection=p_matr,
+                          model_view=mv_matr, save_path=self.project + "_MATRICES.txt").save()
+
+    def save_Unity_info(self):
+        ground_points = [self.cp.img2world(point=line[0], plane=self.ground_plane, reducing=self.reducing)
+                         for line in self.ground]
+        walls = [[self.cp.img2world(point=line[0], plane=self.walls_planes[i], reducing=self.reducing) for line in wall]
+                 for i, wall in enumerate(self.walls)]
+        ground_tex = [self.ground_image.texture_coordinates(point) for point in ground_points]
+        walls_tex = [[self.walls_images[i].texture_coordinates(point) for point in wall]
+                     for i, wall in enumerate(walls)]
+        with open('DATA\\POINTS_INFO.txt', 'w') as f:
+            f.write('%d\n' % ground_points.__len__())
+            for point in ground_points:
+                for c in point:
+                    f.write('%f ' % float(c))
+                f.write('\n')
+            for tex in ground_tex:
+                for c in tex:
+                    f.write('%f ' % float(c))
+                f.write('\n')
+
+            f.write('%d\n' % walls.__len__())
+            for n, wall in enumerate(walls):
+                f.write('%d\n' % wall.__len__())
+                for point in wall:
+                    for c in point:
+                        f.write('%f ' % float(c))
+                    f.write('\n')
+                for point in walls_tex[n]:
+                    for c in point:
+                        f.write('%f ' % float(c))
+                    f.write('\n')
+
     def __init(self):
+        self.save_Unity_info()
         glClearColor(0, 0, 0, 0)
         glClearDepth(1.0)
         glDepthFunc(GL_LEQUAL)
@@ -215,16 +282,27 @@ class Renderer:
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        left, right, bottom, top, near, far = self.cp.get_internal_parameters()
-        glFrustum(left, right, bottom, top, near, far)
+        # left, right, bottom, top, near, far = self.cp.get_internal_parameters()
+        # glFrustum(left, right, bottom, top, near, far)
+        glMultMatrixf(self.cp.get_GL_projection_matrix().transpose())
 
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glRotatef(180, 1, 0, 0)
-        glMultMatrixf(self.cp.get_GL_model_view_matrix())
+        # glRotatef(180, 1, 0, 0)
+        glMultMatrixf(self.cp.get_GL_model_view_matrix().transpose())
+
+        # print glGetFloatv(GL_PROJECTION_MATRIX)
+        # print self.cp.get_GL_projection_matrix().transpose()
+        # exit(0)
+
         # print left, right, bottom, top, near, far
         # print self.cp.get_GL_model_view_matrix()
         # self.help_output()
+
+        self.__save_matrices()
+        # print self.cp.img2world()
+        # print self.cp.world2img(point=(25, -30, 0))
+        # exit(0)
 
     def __reshape(self, width, height):
         glViewport(0, 0, width, height)
@@ -232,27 +310,94 @@ class Renderer:
         # glMatrixMode(GL_PROJECTION)
         # glLoadIdentity()
         # gluPerspective(60.0, float(width) / float(height), 1.0, 1000.0)
-        glMatrixMode(GL_MODELVIEW)
-        # model_view = np.zeros((4, 4))
-        # model_view[:3, :] = self.cp.get_external_calibration()[:, :]
-        # model_view[3, 3] = 1
-        # glLoadMatrixf(model_view)
-        glLoadIdentity()
-        gluLookAt(self.eye[0], self.eye[1], self.eye[2],
-                  self.cen[0], self.cen[1], self.cen[2],
-                  self.up[0], self.up[1], self.up[2])
+        # glMatrixMode(GL_MODELVIEW)
+        # # model_view = np.zeros((4, 4))
+        # # model_view[:3, :] = self.cp.get_external_calibration()[:, :]
+        # # model_view[3, 3] = 1
+        # # glLoadMatrixf(model_view)
+        # glLoadIdentity()
+        # gluLookAt(self.eye[0], self.eye[1], self.eye[2],
+        #           self.cen[0], self.cen[1], self.cen[2],
+        #           self.up[0], self.up[1], self.up[2])
         # print self.eye, self.cen
 
     def __display(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        gluLookAt(self.eye[0], self.eye[1], self.eye[2],
-                  self.cen[0], self.cen[1], self.cen[2],
-                  self.up[0], self.up[1], self.up[2])
-        # self.__draw_coordinates()
+        # gluLookAt(self.eye[0], self.eye[1], self.eye[2],
+        #           self.cen[0], self.cen[1], self.cen[2],
+        #           self.up[0], self.up[1], self.up[2])
+        # glRotatef(180, 0, 0, 1)
+        glRotatef(180, 1, 0, 0)
+        # glRotatef(180, 1, 0, 1)
+
+        glMultMatrixf(self.cp.get_GL_model_view_matrix().transpose())
+
+        ##################################
+        ##################################
+        # from CommonFunctions import axis_rotation_matrix, matrix3to4
+        # print 'Calibration:'
+        # print 'v1:\n', self.cp.get_calibration_matrix()
+        # print 'v2_GL (it has to):\n', self.cp.get_GL_projection_matrix() * \
+        #                               matrix3to4(axis_rotation_matrix((1, 0, 0), pi)) * \
+        #                               self.cp.get_GL_model_view_matrix()
+        # print 'in_GL (transposed):\n', (np.matrix(glGetFloatv(GL_MODELVIEW_MATRIX)) *
+        #                    np.matrix(glGetFloatv(GL_PROJECTION_MATRIX))).transpose()
+        #
+        # print '\nProjection:'
+        # print 'v1:\n', self.cp.get_internal_calibration()
+        # print 'v2_GL:\n', self.cp.get_GL_projection_matrix()
+        # print 'in_GL (transposed):\n', np.matrix(glGetFloatv(GL_PROJECTION_MATRIX)).transpose()
+        #
+        # # print 'temp\n', np.asarray(np.vstack((np.matrix(self.cp.get_internal_calibration()).transpose(), np.array([0, 0, 0, 1]))), np.float32, order='F')
+        #
+        # print '\nModelview:'
+        # print 'v1:\n', self.cp.get_external_calibration()
+        # print 'v2_GL (with rotate):\n', self.cp.get_GL_model_view_matrix()
+        # print 'in_GL (transposed):\n', np.matrix(glGetFloatv(GL_MODELVIEW_MATRIX)).transpose()
+        #
+        # exit(0)
+
+        # w, h = self.cp.image.size
+        # p1, p2, p3, p4 = (0, 0), (0, h), (w, 0), (w, h)
+        # for p in (p1, p2, p3, p4):
+        #     print p, '->', self.cp.img2world(p)
+        # self.cp.help_function()
+        # exit()
+
+
+
+        ###################################
+        ##################################
+
+
+        # glMultMatrixf(self.cp.get_GL_model_view_matrix())
+
+        # # print "INFO NOW"
+        # # print glGetFloatv(GL_PROJECTION_MATRIX)
+        # print glGetFloatv(GL_MODELVIEW_MATRIX)
+        # glMatrixMode(GL_MODELVIEW)
+        # glLoadIdentity()
+        # gluLookAt(self.eye[0], self.eye[1], self.eye[2],
+        #           self.cen[0], self.cen[1], self.cen[2],
+        #           self.up[0], self.up[1], self.up[2])
+        # # glRotatef(180, 1, 0, 0)
+        # print "\n"
+        # print glGetFloatv(GL_MODELVIEW_MATRIX)
+        # # print self.cp.get_GL_model_view_matrix().transpose()
+        # # exit(0)
+
+
+        self.__draw_coordinates()
         self.__draw_ground()
         self.__draw_walls()
+        self.__draw_cube(self.cp.img2world(point=(200, 100),
+                                           plane=self.ground_plane,
+                                           reducing=self.reducing))
+        self.__draw_cube(self.cp.img2world(point=(700, 400),
+                                           plane=self.ground_plane,
+                                           reducing=self.reducing))
         # exit()
         glutSwapBuffers()
 

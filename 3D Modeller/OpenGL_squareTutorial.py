@@ -10,6 +10,32 @@ def normalize(vect):
     return vect / norm if norm > 0 else vect
 
 
+def identity():
+    return np.asarray([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=np.float32, order='F')
+
+
+def model_view():
+    mv = identity()
+    mv = translate(mv, (0, -1, -1))
+    mv = rotate(mv, (0, 0, 1), 50)
+    return mv
+
+
+def projection():
+    return identity()
+
+
+def translate(matrix, vec):
+    matrix[3, :3] = vec[:]
+    return matrix
+
+
+def rotate(matrix, axis, angle):
+    ## -angle ???
+    from CommonFunctions import axis_rotation_matrix, matrix3to4
+    return np.matrix(matrix) * matrix3to4(axis_rotation_matrix(axis, -angle * pi / 180.0))
+
+
 class Renderer:
     def __init__(self, vertexes):
         self.vertexes = vertexes
@@ -26,37 +52,43 @@ class Renderer:
     def __display(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
         glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(self.eye[0], self.eye[1], self.eye[2],
-                  self.cen[0], self.cen[1], self.cen[2],
-                  self.up[0], self.up[1], self.up[2])
-        glTranslatef(10, 10, 10)
-        glRotatef(10, 1, 0, 0)
+        # gluLookAt(self.eye[0], self.eye[1], self.eye[2],
+        #           self.cen[0], self.cen[1], self.cen[2],
+        #           self.up[0], self.up[1], self.up[2])
+        # glTranslatef(0, 0, -2)
+        glLoadMatrixf(model_view())
+        # glRotatef(10, 1, 0, 0)
         self.__draw_objects()
         glutSwapBuffers()
+        # print "INFO NOW"
+        # print glGetFloatv(GL_PROJECTION_MATRIX)
+        # print glGetFloatv(GL_MODELVIEW_MATRIX)
+        #
+        # exit(0)
 
     def __reshape(self, width, height):
         glViewport(0, 0, width, height)
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)  # set projection matrix parameters
         glLoadIdentity()
+        # glLoadMatrixf()
         gluPerspective(60.0, float(width) / float(height), 1.0, 60.0)
-        glMatrixMode(GL_MODELVIEW)  # set modelview matrix parameters
-        glLoadIdentity()
-        gluLookAt(self.eye[0], self.eye[1], self.eye[2],
-                  self.cen[0], self.cen[1], self.cen[2],
-                  self.up[0], self.up[1], self.up[2])
+        # glMatrixMode(GL_MODELVIEW)  # set modelview matrix parameters
+        # glLoadIdentity()
+        # gluLookAt(self.eye[0], self.eye[1], self.eye[2],
+        #           self.cen[0], self.cen[1], self.cen[2],
+        #           self.up[0], self.up[1], self.up[2])
 
     def __init_opengl(self):
         # initialize parameters
         glClearColor(0, 0, 0, 0)
-        self.eye, self.cen, self.up = [0, 0, 0], [1, 1, 1], [0, 1, 0]
+        self.eye, self.cen, self.up = [0, 0, 0], [0, 0, 0], [0, 1, 0]
         self.mouse_x, self.mouse_y, self.push = 0, 0, False
 
     def render(self):
         glutInit(sys.argv)
         glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE)
-        glutInitWindowSize(500, 500)
+        glutInitWindowSize(700, 350)
         glutInitWindowPosition(50, 50)
         glutCreateWindow('Square Tutorial')
         glutDisplayFunc(self.__display)
@@ -124,7 +156,7 @@ class Renderer:
                 self.cen[2] = self.eye[2] + sin(fx) * temp[0] + cos(fx) * temp[2]
                 self.cen[0] = self.eye[0] + cos(fx) * temp[0] - sin(fx) * temp[2]
             if _y:
-                self.cen[1] -= _y / 10.0
+                self.cen[1] -= _y / 30.0
         self.mouse_x = pos_x
         self.mouse_y = pos_y
 

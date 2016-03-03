@@ -4,8 +4,8 @@ using System.Xml;
 public class CameraCalibration : MonoBehaviour{
 
 	public bool fromXML = true;
-	public string pathXML = "View_005.xml";
-	private string pathFOLDER = "C:\\Users\\Andrew\\Desktop\\VisionLab\\_OLD_\\Unity_TrackingProject\\calibrations\\";
+	public string pathXML = "View_007.xml";
+	private string pathFOLDER = "E:\\VisionLab\\VisionLab\\_OLD_\\Unity_TrackingProject\\calibrations\\";
 	private Camera cam;
 	public float width, height;
 	private float ncx, nfx, dx, dy, dpx, dpy;
